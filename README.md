@@ -28,6 +28,10 @@ More work - mainly API design, probably heavily taking inspiration from `rlua` -
 is needed to get the bindings into a state where they can be published to
 `crates.io`. I've reserved the names `luau` and `luau-sys` for this purpose.
 
+Most of the code in the `luau` crate is just a proof-of-concept and will be
+iterated upon and improved over time. What you see is most likely not what will
+make it into the `0.1` release.
+
 ## Contributing
 
 Make sure to read [`CONTRIBUTING.md`](CONTRIBUTING.md) for general guidelines on
