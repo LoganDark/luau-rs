@@ -21,7 +21,7 @@
 
 gluau_Buffer gluauU_strtobuf(const std::string &input) {
 	size_t len = input.length();
-	char* block = static_cast<char*>(malloc(len)); // ensure max alignment
+	char* block = static_cast<char*>(malloc(len));
 
 	if (block) {
 		// the memory block is associated with its length, so no null terminator
