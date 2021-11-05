@@ -15,22 +15,26 @@ features first-class, such as:
 
 This library is a heavy work-in-progress - that is, almost none of the features
 listed above are actually functional at the moment. However, the fundamental
-pieces are in place:
+pieces are in place - `luau-sys` is available and aims to provide a safe C API
+for interfacing with all of Luau, including the C++ parts.
 
-- Luau is compiled and linked to by the build script. Luau is included with the
-  distribution; it is not retrieved from the network at build time
-- C++ "glue" code is compiled and linked to, to expose C interfaces to C++-only
-  functionality
-- Both of these are exported by `luau-sys`, and consumed by `luau`, which
-  smooths over the raw C interface with modern Rust types and safety
+Check out the [`README.md` for `luau-sys`](luau-sys/README.md) for more
+information on how it works. The raw bindings are consumed by `luau`, which
+smooths over the raw C interface with modern Rust types and safety. Most work on
+this repository will be working with the "glue", as that's what dictates what
+functionality is available for Rust to call into (by doing C++ stuff and then
+translating that to pure C types).
 
-More work - mainly API design, probably heavily taking inspiration from `rlua` -
-is needed to get the bindings into a state where they can be published to
-`crates.io`. I've reserved the names `luau` and `luau-sys` for this purpose.
+The rest of the work will be consumer-facing API design of the `luau` crate that
+consumes `luau-sys` - probably taking heavy inspiration from [`rlua`](
+https://docs.rs/rlua). Once the crate is actually usable for creating Luau VMs,
+compiling code for them, and executing it inside, all from Safe Rust, it may be
+published to Crates.io if the API design is good enough.
 
-Most of the code in the `luau` crate is just a proof-of-concept and will be
-iterated upon and improved over time. What you see is most likely not what will
-make it into the `0.1` release.
+For now, most of the code in the `luau` crate is just a proof-of-concept and
+will be iterated upon and improved over time. What you see is most likely not
+what will make it into the `0.1` release. I'm always open to feedback,
+suggestions, and pull requests.
 
 ## Contributing
 
