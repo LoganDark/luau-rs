@@ -1,4 +1,46 @@
-# Individual Contributor License Agreement
+## Questions
+
+If you have a question about the library usage/implementation, you can ask in
+[GitHub discussions](https://github.com/LoganDark/luau-rs/discussions).
+
+## Bugs
+
+If you find a bug in the library, and especially if you find Undefined Behavior
+that can be triggered with only Safe Rust, please [file a GitHub issue](
+https://github.com/LoganDark/luau-rs/issues/new). This library is still in heavy
+development, and is not complete, but it still aims to be 100% safe and free of
+UB.
+
+Bugs include:
+
+- Being able to crash or panic the library from sandboxed Luau code
+- Aborting the process with "Rust cannot catch foreign exceptions" (UB!!)
+- Being able to corrupt any Luau data structures from Safe Rust, including the
+  Luau stack, from inside _or outside_ a native function
+- Being able to break import resolution, fastcall etc. without deoptimization
+  (safeenv being disabled)
+
+## Improvements
+
+This library has to use allocations in many cases to pass objects around, due to
+how difficult it is to interface between C++ and Rust. If you can find a (safe!)
+way to avoid an allocation, a PR for that change would be greatly appreciated.
+Additionally, if you can improve performance of any part of the library, feel
+free to open a PR for that as well.
+
+## Contributions
+
+PRs from first-time contributors containing significant code changes or
+additions (generally more than 3 lines or so) should be accompanied by an
+agreement to the accompanying Contributor License Agreement, to ensure that the
+project can continue to contain their contributions indefinitely. If you intend
+to submit your first contribution to the project, be sure to review the CLA and
+include an agreement in the description of your pull request if appropriate.
+
+Large pull requests from contributors that have not yet agreed to the CLA cannot
+be merged until CLA agreement is received from the pull request author(s).
+
+# Contributor License Agreement
 Thank you for your interest in contributing to Us.
 
 This contributor agreement ("Agreement") documents the rights granted by contributors to Us. To make this document effective, please accompany your contribution with the phrase "I have read and agree to be bound by the CLA". This is a legally binding document, so please read it carefully before agreeing to it. The Agreement may cover more than one software project managed by Us.
