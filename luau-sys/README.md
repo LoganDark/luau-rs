@@ -35,6 +35,20 @@ available will depend on which crate features you have enabled:
 
 This crate compiles on Windows and Linux, and should compile on macOS as well.
 
+**Warning: Compilation is very, very slow on Windows. This is likely due to two
+things:**
+
+1. Visual Studio being garbage as a build system, and not recognizing when
+   nothing's changed.
+2. Re-compilation of Luau taking forever.
+
+Assistance with getting the crate to compile faster would be greatly
+appreciated. Windows is not _at all_ a priority, the top priority is keeping
+the crate functional on Linux/Unix operating systems, since those are the ones
+that actually work.
+
+That said, it does build and run on Windows currently.
+
 ## !! WIP !!
 
 This library is a heavy work-in-progress - that is, almost none of the features
