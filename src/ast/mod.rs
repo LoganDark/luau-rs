@@ -1,6 +1,6 @@
 use std::fmt::{Debug, Display, Formatter, Write};
 
-use luau_sys::compiler::gluau_ParseOpts;
+use luau_sys::glue::gluau_ParseOpts;
 
 #[derive(Copy, Clone, Eq, PartialEq, Debug)]
 pub enum Mode {

@@ -1,5 +1,4 @@
 use crate::ast::{ParseOptions, Span};
-use crate::luau_sys::compiler;
 
 #[derive(Copy, Clone, Eq, PartialEq, Debug)]
 pub enum OptimizationLevel {
@@ -33,11 +32,11 @@ pub enum CoverageLevel {
 
 /// Instructs the compiler on how it should generate bytecode.
 #[derive(Copy, Clone, Debug)]
-pub struct CompileOptions(compiler::gluau_CompileOpts);
+pub struct CompileOptions(luau_sys::glue::gluau_CompileOpts);
 
 impl Default for CompileOptions {
 	fn default() -> Self {
-		Self(compiler::gluau_CompileOpts {
+		Self(luau_sys::glue::gluau_CompileOpts {
 			bytecodeVersion: 1,
 			optimizationLevel: 1,
 			debugLevel: 1,
@@ -137,7 +136,7 @@ pub enum CompileError {
 #[derive(Clone, Eq, PartialEq, Debug)]
 pub struct Chunk(Vec<u8>);
 
-fn error_from_gluau(gluau: compiler::gluau_Error) -> Error {
+fn error_from_gluau(gluau: luau_sys::glue::gluau_Error) -> Error {
 	unsafe {
 		Error {
 			// SAFETY: this is fine
@@ -153,24 +152,24 @@ fn error_from_gluau(gluau: compiler::gluau_Error) -> Error {
 }
 
 pub fn compile(source: &str, compile_opts: &CompileOptions, parse_opts: &ParseOptions) -> Result<Chunk, CompileError> {
-	let source = luau_sys::compiler::gluau_Buffer {
+	let source = luau_sys::glue::gluau_Buffer {
 		data: source.as_ptr() as _,
 		len: source.len() as _
 	};
 
 	// SAFETY: C++ exceptions are caught by the C++ glue, and never unwind into Rust
 	let result = unsafe {
-		luau_sys::compiler::gluau_compile(source, compile_opts.0, parse_opts.0)
+		luau_sys::glue::gluau_compile(source, compile_opts.0, parse_opts.0)
 	};
 
 	match result.type_ {
-		luau_sys::compiler::gluau_CompileResultType_SUCCESS => Ok(Chunk(unsafe {
+		luau_sys::glue::gluau_CompileResultType_SUCCESS => Ok(Chunk(unsafe {
 			let bytecode = result.data.success.bytecode;
 			// SAFETY: this is fine
 			Vec::from_raw_parts(bytecode.data as _, bytecode.len as _, bytecode.len as _)
 		})),
 
-		luau_sys::compiler::gluau_CompileResultType_PARSE_FAILURE => Err(unsafe {
+		luau_sys::glue::gluau_CompileResultType_PARSE_FAILURE => Err(unsafe {
 			let failure = result.data.parse_failure;
 			// SAFETY: this is also fine
 			CompileError::Parse(
@@ -179,7 +178,7 @@ pub fn compile(source: &str, compile_opts: &CompileOptions, parse_opts: &ParseOp
 			)
 		}),
 
-		luau_sys::compiler::gluau_CompileResultType_COMPILE_FAILURE => Err(unsafe {
+		luau_sys::glue::gluau_CompileResultType_COMPILE_FAILURE => Err(unsafe {
 			CompileError::Compile(error_from_gluau(result.data.compile_failure))
 		}),
 
@@ -188,14 +187,14 @@ pub fn compile(source: &str, compile_opts: &CompileOptions, parse_opts: &ParseOp
 }
 
 pub fn compile_sneakily(source: &str, compile_opts: &CompileOptions, parse_opts: &ParseOptions) -> Chunk {
-	let source = luau_sys::compiler::gluau_Buffer {
+	let source = luau_sys::glue::gluau_Buffer {
 		data: source.as_ptr() as _,
 		len: source.len() as _
 	};
 
 	Chunk(unsafe {
 		// SAFETY: this method cannot throw
-		let buffer = luau_sys::compiler::gluau_compile_sneakily(source, compile_opts.0, parse_opts.0);
+		let buffer = luau_sys::glue::gluau_compile_sneakily(source, compile_opts.0, parse_opts.0);
 		Vec::from_raw_parts(buffer.data as _, buffer.len as _, buffer.len as _)
 	})
 }
