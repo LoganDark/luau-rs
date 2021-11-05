@@ -14,16 +14,3 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-pub extern crate luau_sys;
-
-#[cfg(feature = "ast")]
-pub mod ast;
-
-#[cfg(feature = "compiler")]
-pub mod compiler;
-
-#[cfg(feature = "analysis")]
-pub mod analysis;
-
-#[cfg(feature = "vm")]
-pub mod vm;

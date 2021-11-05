@@ -1,8 +1,9 @@
 [package]
 name = 'luau-sys'
+description = "Raw bindings to Roblox's Luau"
 version = '0.1.0'
 edition = '2018'
-description = 'Raw bindings to Luau'
+license = 'GPLv3'
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
