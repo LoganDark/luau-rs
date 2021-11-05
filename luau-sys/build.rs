@@ -13,148 +13,120 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+#[cfg(any(feature = "ast", feature = "compiler", feature = "analysis", feature = "vm"))]
 fn main() {
-	#[cfg(any(feature = "ast", feature = "compiler", feature = "analysis", feature = "vm"))]
-		let out_dir = std::env::var("OUT_DIR").expect("couldn't find output directory");
+	let out_dir = std::env::var("OUT_DIR").expect("couldn't find output directory");
 
-	{ // build luau with cmake
-		eprintln!("building Luau...");
+	eprintln!("building Luau...");
 
-		let destination = {
-			let mut config = cmake::Config::new("luau");
+	let destination = {
+		let mut config = cmake::Config::new("luau");
 
-			config.define("LUAU_BUILD_CLI", "OFF")
-				.define("LUAU_BUILD_TESTS", "OFF")
-				.no_build_target(true);
+		config.define("LUAU_BUILD_CLI", "OFF")
+			.define("LUAU_BUILD_TESTS", "OFF")
+			.no_build_target(true);
 
-			// Windows is special, and needs to have an extra flag defined
-			// This is due to cmake-rs wiping them for no reason
-			// Luau needs unwinding in order for exceptions to work (obviously)
-			#[cfg(target_os = "windows")]
-				config.cxxflag("/EHsc");
+		// Windows is special, and needs to have an extra flag defined
+		// This is due to cmake-rs wiping them for no reason
+		// Luau needs unwinding in order for exceptions to work (obviously)
+		#[cfg(target_os = "windows")]
+			config.cxxflag("/EHsc");
 
-			config.build()
-		};
+		config.build()
+	};
 
-		eprintln!("successfully built Luau");
+	eprintln!("successfully built Luau");
 
-		#[cfg(not(target_os = "windows"))]
-		println!("cargo:rustc-link-search=native={}/build", destination.display());
+	#[cfg(not(target_os = "windows"))]
+	println!("cargo:rustc-link-search=native={}/build", destination.display());
 
-		// Windows is once again special and outputs libs in even more subdirs
-		#[cfg(target_os = "windows")] {
-			println!("cargo:rustc-link-search=native={}/build/Debug", destination.display());
-			println!("cargo:rustc-link-search=native={}/build/Release", destination.display());
-		}
-
-		macro_rules! link {
-			($feat:literal, $module:literal) => {
-				#[cfg(feature = $feat)]
-				println!(concat!("cargo:rustc-link-lib=static=Luau.", $module));
-			}
-		}
-
-		// link to C++ stdlib, unless we're on windows, which is special
-		#[cfg(all(not(target_os = "windows"), any(feature = "ast", feature = "compiler", feature = "analysis", feature = "vm")))]
-		println!("cargo:rustc-link-lib=stdc++");
-
-		// link only to requested features
-		link!("ast", "Ast");
-		link!("compiler", "Compiler");
-		link!("analysis", "Analysis");
-		link!("vm", "VM");
+	// Windows is once again special and outputs libs in even more subdirs
+	#[cfg(target_os = "windows")] {
+		println!("cargo:rustc-link-search=native={}/build/Debug", destination.display());
+		println!("cargo:rustc-link-search=native={}/build/Release", destination.display());
 	}
 
-	#[cfg(feature = "vm")] { // generate bindings to what we can
-		bindgen::builder()
-			.clang_arg("-Iluau/VM/include")
-			.clang_arg("-std=c++17")
-			.header("vm.hpp")
-			.generate()
-			.expect("couldn't generate Luau VM bindings")
-			.write_to_file(format!("{}/vm.rs", out_dir))
-			.expect("couldn't write Luau VM bindings to file");
+	macro_rules! link {
+		($feat:literal, $module:literal) => {
+			#[cfg(feature = $feat)]
+			println!(concat!("cargo:rustc-link-lib=static=Luau.", $module));
+		}
 	}
 
-	#[cfg(any(feature = "ast", feature = "compiler", feature = "analysis", feature = "vm"))] {
-		eprintln!("compiling glue...");
+	// link to C++ stdlib, unless we're on windows, which is special
+	#[cfg(not(target_os = "windows"))]
+	println!("cargo:rustc-link-lib=stdc++");
 
-		// cc links automatically
-		let mut build = cc::Build::new();
-		build.flag("-Iluau/Ast/include")
-			.flag("-Iluau/Compiler/include")
-			.flag("-Iluau/Analysis/include")
-			.flag("-Iluau/VM/include")
-			// MSVC requires /std:c++latest for designated initializers
-			// I quite like them so I'm not going to stop using them
-			// Windows being special for the fourth time
-			.flag(if cfg!(target_os = "windows") { "/std:c++latest" } else { "-std=c++17" });
+	// link only to requested features
+	link!("ast", "Ast");
+	link!("compiler", "Compiler");
+	link!("analysis", "Analysis");
+	link!("vm", "VM");
 
-		macro_rules! build_glue {
-			($feat:literal) => {
-				build.file(concat!("src/glue/", $feat, ".cpp"));
-			}
+	drop(destination);
+
+	// generate bindings to what we can
+	#[cfg(feature = "vm")]
+	bindgen::builder()
+		.clang_arg("-Iluau/VM/include")
+		.clang_arg("-std=c++17")
+		.header("vm.hpp")
+		.generate()
+		.expect("couldn't generate Luau VM bindings")
+		.write_to_file(format!("{}/vm.rs", out_dir))
+		.expect("couldn't write Luau VM bindings to file");
+
+	let mut glue_cc = cc::Build::new();
+
+	glue_cc
+		.flag("-Iluau/Ast/include")
+		.flag("-Iluau/Compiler/include")
+		.flag("-Iluau/Analysis/include")
+		.flag("-Iluau/VM/include")
+		// MSVC requires /std:c++latest for designated initializers
+		// I quite like them so I'm not going to stop using them
+		// Windows being special for the fourth time
+		.flag(if cfg!(target_os = "windows") { "/std:c++latest" } else { "-std=c++17" });
+
+	let mut glue_bindgen = bindgen::builder()
+		.clang_args([
+			"-Iluau/Ast/include",
+			"-Iluau/Compiler/include",
+			"-Iluau/Analysis/include",
+			"-Iluau/VM/include"
+		])
+		.allowlist_function("gluau_.*");
+
+	macro_rules! glue {
+		($feat:literal) => {
+			glue_cc.file(concat!("src/glue/", $feat, ".cpp"));
+			glue_bindgen = glue_bindgen.header(concat!("src/glue/", $feat, ".h"));
 		}
-
-		macro_rules! maybe_build_glue {
-			($feat:literal) => {
-				// cc links to it automatically
-				#[cfg(feature = $feat)]
-				build_glue!($feat);
-			}
-		}
-
-		// compile in glue code
-		#[cfg(any(feature = "ast", feature = "compiler", feature = "analysis", feature = "vm"))]
-		build_glue!("common");
-		maybe_build_glue!("ast");
-		maybe_build_glue!("compiler");
-		maybe_build_glue!("analysis");
-		maybe_build_glue!("vm");
-
-		build.compile("gluau");
-
-		eprintln!("compiled and linked to glue");
 	}
 
-	#[cfg(any(feature = "ast", feature = "compiler", feature = "analysis", feature = "vm"))] {
-		let mut glue_builder = bindgen::builder()
-			.clang_args([
-				"-Iluau/Ast/include",
-				"-Iluau/Compiler/include",
-				"-Iluau/Analysis/include",
-				"-Iluau/VM/include"
-			]);
-
-		#[allow(deprecated)] { // don't care about your unnecessary renaming
-			glue_builder = glue_builder.whitelist_function("gluau_.*");
+	macro_rules! maybe_glue {
+		($feat:literal) => {
+			#[cfg(feature = $feat)]
+			glue!($feat);
 		}
-
-		macro_rules! bind_glue {
-			($builder:ident, $feat:literal) => {{
-				$builder = $builder.header(concat!("src/glue/", $feat, ".h"));
-			}}
-		}
-
-		macro_rules! maybe_bind_glue {
-			($builder:ident, $feat:literal) => {
-				#[cfg(feature = $feat)]
-				bind_glue!($builder, $feat);
-			}
-		}
-
-		bind_glue!(glue_builder, "common");
-		maybe_bind_glue!(glue_builder, "ast");
-		maybe_bind_glue!(glue_builder, "compiler");
-		maybe_bind_glue!(glue_builder, "analysis");
-		maybe_bind_glue!(glue_builder, "vm");
-
-		glue_builder
-			.generate()
-			.expect("couldn't generate Luau glue bindings")
-			.write_to_file(format!("{}/glue.rs", out_dir))
-			.expect("couldn't write Luau glue bindings to file");
 	}
+
+	glue!("common");
+	maybe_glue!("ast");
+	maybe_glue!("compiler");
+	maybe_glue!("analysis");
+	maybe_glue!("vm");
+
+	// cc links automatically
+	glue_cc.compile("gluau");
+	glue_bindgen
+		.generate()
+		.expect("couldn't generate Luau glue bindings")
+		.write_to_file(format!("{}/glue.rs", out_dir))
+		.expect("couldn't write Luau glue bindings to file");
 
 	// all should be good
 }
+
+#[cfg(not(any(feature = "ast", feature = "compiler", feature = "analysis", feature = "vm")))]
+fn main() {}
