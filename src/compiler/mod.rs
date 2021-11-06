@@ -152,6 +152,12 @@ pub enum CompileError {
 #[derive(Clone, Eq, PartialEq, Debug)]
 pub struct Chunk(Vec<u8>);
 
+impl AsRef<[u8]> for Chunk {
+	fn as_ref(&self) -> &[u8] {
+		&self.0
+	}
+}
+
 fn error_from_gluau(gluau: luau_sys::glue::gluau_Error) -> Error {
 	unsafe {
 		Error {

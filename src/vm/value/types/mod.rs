@@ -14,12 +14,22 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-pub use error::Error;
-pub use global::Luau;
-pub use thread::{Coroutine, MainThread, Thread, ThreadUserdata};
-pub use value::{ProduceLuauValue, FromLuauValue, ToLuauValue, types, Value};
+use string::StringValue;
 
-mod error;
-mod thread;
-mod global;
-mod value;
+use crate::vm::{Coroutine, ThreadUserdata, Value};
+
+pub mod string;
+pub mod function;
+
+pub enum LuauType<'borrow, 'thread: 'borrow, 'vm: 'thread, UD: ThreadUserdata + 'thread> {
+	Nil,
+	Boolean(bool),
+	LightUserdata(*mut std::ffi::c_void),
+	Number(f64),
+	Vector([f32; 3]),
+	String(StringValue<'borrow, 'thread, 'vm, UD>),
+	Table(Value<'borrow, 'thread, 'vm, UD>),
+	Function(Value<'borrow, 'thread, 'vm, UD>),
+	Userdata(Value<'borrow, 'thread, 'vm, UD>),
+	Thread(Coroutine<'thread, 'vm, UD>)
+}

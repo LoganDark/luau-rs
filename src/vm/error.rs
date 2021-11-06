@@ -14,12 +14,9 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-pub use error::Error;
-pub use global::Luau;
-pub use thread::{Coroutine, MainThread, Thread, ThreadUserdata};
-pub use value::{ProduceLuauValue, FromLuauValue, ToLuauValue, types, Value};
-
-mod error;
-mod thread;
-mod global;
-mod value;
+#[derive(Clone, Eq, PartialEq, Debug)]
+pub enum Error {
+	Runtime(String),
+	Memory,
+	ErrorHandling
+}

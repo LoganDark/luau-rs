@@ -14,12 +14,16 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-pub use error::Error;
-pub use global::Luau;
-pub use thread::{Coroutine, MainThread, Thread, ThreadUserdata};
-pub use value::{ProduceLuauValue, FromLuauValue, ToLuauValue, types, Value};
+use luau::vm::Luau;
 
-mod error;
-mod thread;
-mod global;
-mod value;
+async fn main() {
+	let vm = Luau::new().expect("failed to create Luau VM");
+	let compiled = luau::compiler::compile("print('Hello, World!')", &Default::default(), &Default::default())
+		.expect("failed to compile function");
+
+	let mut main_thread = vm.main_thread();
+	let function = main_thread.load(compiled, "=compiled")
+		.expect("failed to load function");
+
+	println!("all seems good for now");
+}
