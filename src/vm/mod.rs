@@ -16,8 +16,8 @@
 
 pub use error::Error;
 pub use global::Luau;
-pub use thread::{Coroutine, MainThread, Thread, ThreadUserdata};
-pub use value::{ProduceLuauValue, FromLuauValue, ToLuauValue, types, Value};
+pub use thread::{Thread, ThreadUserdata};
+pub use value::{types, Value};
 
 mod error;
 mod thread;

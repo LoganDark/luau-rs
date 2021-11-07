@@ -19,6 +19,7 @@ default = ['ast', 'compiler', 'analysis', 'vm']
 [dependencies]
 luau-sys = { path = 'luau-sys', version = '0.1.0' }
 rand = '~0.8.4'
+thiserror = '^1.0.30'
 
 [dev-dependencies]
 tokio = { version = '^1.13.0', features = ['macros', 'rt'] }

@@ -14,9 +14,15 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-#[derive(Clone, Eq, PartialEq, Debug)]
+#[derive(Clone, Eq, PartialEq, Debug, thiserror::Error)]
 pub enum Error {
+	/// There was a runtime error during execution. Only the error message is
+	/// available. Other information (tracebacks) may be obtainable externally.
+	#[error("{0}")]
 	Runtime(String),
-	Memory,
-	ErrorHandling
+
+	/// There wasn't enough stack space available to perform the requested
+	/// operation.
+	#[error("out of stack space")]
+	OutOfStack
 }

@@ -14,15 +14,18 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+use std::ffi::CStr;
+
 use luau::vm::Luau;
 
-async fn main() {
+fn main() {
 	let vm = Luau::new().expect("failed to create Luau VM");
-	let compiled = luau::compiler::compile("print('Hello, World!')", &Default::default(), &Default::default())
+	let compiled = Luau::compile("print('Hello, World!')")
 		.expect("failed to compile function");
 
-	let mut main_thread = vm.main_thread();
-	let function = main_thread.load(compiled, "=compiled")
+	let chunkname = unsafe { CStr::from_bytes_with_nul_unchecked("=stuff\0".as_bytes()) };
+	let main_thread = vm.main_thread();
+	let function = main_thread.load_compiled(compiled, chunkname)
 		.expect("failed to load function");
 
 	println!("all seems good for now");

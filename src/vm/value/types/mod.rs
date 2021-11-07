@@ -14,22 +14,19 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-use string::StringValue;
+use crate::vm::{ThreadUserdata, Value};
 
-use crate::vm::{Coroutine, ThreadUserdata, Value};
-
-pub mod string;
 pub mod function;
 
-pub enum LuauType<'borrow, 'thread: 'borrow, 'vm: 'thread, UD: ThreadUserdata + 'thread> {
+pub enum LuauType<'borrow, 'thread: 'borrow, UD: ThreadUserdata> {
 	Nil,
 	Boolean(bool),
 	LightUserdata(*mut std::ffi::c_void),
 	Number(f64),
 	Vector([f32; 3]),
-	String(StringValue<'borrow, 'thread, 'vm, UD>),
-	Table(Value<'borrow, 'thread, 'vm, UD>),
-	Function(Value<'borrow, 'thread, 'vm, UD>),
-	Userdata(Value<'borrow, 'thread, 'vm, UD>),
-	Thread(Coroutine<'thread, 'vm, UD>)
+	String(Value<'borrow, 'thread, UD>),
+	Table(Value<'borrow, 'thread, UD>),
+	Function(Value<'borrow, 'thread, UD>),
+	Userdata(Value<'borrow, 'thread, UD>),
+	Thread(Value<'borrow, 'thread, UD>)
 }

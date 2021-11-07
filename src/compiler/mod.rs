@@ -14,6 +14,8 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+use std::fmt::{Display, Formatter};
+
 use crate::ast::{ParseOptions, Span};
 
 #[derive(Copy, Clone, Eq, PartialEq, Debug)]
@@ -46,7 +48,6 @@ pub enum CoverageLevel {
 	Expression
 }
 
-/// Instructs the compiler on how it should generate bytecode.
 #[derive(Copy, Clone, Debug)]
 pub struct CompileOptions(luau_sys::glue::gluau_CompileOpts);
 
@@ -142,17 +143,29 @@ pub struct Error {
 	pub span: Span
 }
 
-#[derive(Clone, Eq, PartialEq, Debug)]
+impl Display for Error {
+	fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+		Display::fmt(&self.span, f)?;
+		f.write_str(": ")?;
+		Display::fmt(&self.message, f)
+	}
+}
+
+impl std::error::Error for Error {}
+
+#[derive(Clone, Eq, PartialEq, Debug, thiserror::Error)]
 pub enum CompileError {
+	#[error("parse error")]
 	Parse(Vec<Error>),
+
+	#[error("{0}")]
 	Compile(Error)
 }
 
-/// Represents a compiled Luau chunk, and contains the bytecode for that chunk.
 #[derive(Clone, Eq, PartialEq, Debug)]
-pub struct Chunk(Vec<u8>);
+pub struct CompiledFunction(Vec<u8>);
 
-impl AsRef<[u8]> for Chunk {
+impl AsRef<[u8]> for CompiledFunction {
 	fn as_ref(&self) -> &[u8] {
 		&self.0
 	}
@@ -173,7 +186,7 @@ fn error_from_gluau(gluau: luau_sys::glue::gluau_Error) -> Error {
 	}
 }
 
-pub fn compile(source: &str, compile_opts: &CompileOptions, parse_opts: &ParseOptions) -> Result<Chunk, CompileError> {
+pub(crate) fn compile(source: &str, compile_opts: &CompileOptions, parse_opts: &ParseOptions) -> Result<CompiledFunction, CompileError> {
 	let source = luau_sys::glue::gluau_Buffer {
 		data: source.as_ptr() as _,
 		len: source.len() as _
@@ -185,7 +198,7 @@ pub fn compile(source: &str, compile_opts: &CompileOptions, parse_opts: &ParseOp
 	};
 
 	match result.type_ {
-		luau_sys::glue::gluau_CompileResultType_SUCCESS => Ok(Chunk(unsafe {
+		luau_sys::glue::gluau_CompileResultType_SUCCESS => Ok(CompiledFunction(unsafe {
 			let bytecode = result.data.success.bytecode;
 			// SAFETY: this is fine
 			Vec::from_raw_parts(bytecode.data as _, bytecode.len as _, bytecode.len as _)
@@ -208,13 +221,13 @@ pub fn compile(source: &str, compile_opts: &CompileOptions, parse_opts: &ParseOp
 	}
 }
 
-pub fn compile_sneakily(source: &str, compile_opts: &CompileOptions, parse_opts: &ParseOptions) -> Chunk {
+pub(crate) fn compile_sneakily(source: &str, compile_opts: &CompileOptions, parse_opts: &ParseOptions) -> CompiledFunction {
 	let source = luau_sys::glue::gluau_Buffer {
 		data: source.as_ptr() as _,
 		len: source.len() as _
 	};
 
-	Chunk(unsafe {
+	CompiledFunction(unsafe {
 		// SAFETY: this method cannot throw
 		let buffer = luau_sys::glue::gluau_compile_sneakily(source, compile_opts.0, parse_opts.0);
 		Vec::from_raw_parts(buffer.data as _, buffer.len as _, buffer.len as _)

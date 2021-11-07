@@ -14,28 +14,22 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-use std::ffi::CString;
+use std::ops::{Deref, DerefMut};
 
-use luau_sys::luau::{lua_tolstring, luau_load, luaV_tostring};
+use crate::vm::{ThreadUserdata, Value};
 
-use crate::compiler::Chunk;
-use crate::vm::{Error, Luau, Thread, ThreadUserdata, Value};
+pub struct Function<'borrow, 'thread: 'borrow, UD: ThreadUserdata>(pub Value<'borrow, 'thread, UD>);
 
-pub struct Function<'borrow, 'thread: 'borrow, 'vm: 'thread, UD: ThreadUserdata + 'thread>(pub Value<'borrow, 'thread, 'vm, UD>);
+impl<'borrow, 'thread: 'borrow, UD: ThreadUserdata> Deref for Function<'borrow, 'thread, UD> {
+	type Target = Value<'borrow, 'thread, UD>;
 
-impl<'borrow, 'thread: 'borrow, 'vm: 'thread, UD: ThreadUserdata + 'thread> Function<'borrow, 'thread, 'vm, UD> {
-	pub fn load(thread: &'borrow mut Thread<'borrow, 'thread, 'vm, UD>, chunk: Chunk, chunkname: &str) -> Result<Self, Error> {
-		unsafe {
-			let cstring = CString::new(chunkname).expect("Don't pass a chunk name with an embedded null!");
+	fn deref(&self) -> &Self::Target {
+		&self.0
+	}
+}
 
-			if luau_load(thread.state as _, cstring.as_ptr(), &chunk.as_ref()[0] as *const u8 as _, chunk.as_ref().len() as _, 0) == 0 {
-				Ok(Self(Value::from_stack_top(thread)))
-			} else {
-				// error is at the top of the stack
-				let mut length: std::os::raw::c_ulong = 0;
-				let data = lua_tolstring(thread.state as _, -1, &mut length as _);
-				Err(Error::Runtime(String::from_raw_parts(data as _, length as _, length as _)))
-			}
-		}
+impl<'borrow, 'thread: 'borrow, UD: ThreadUserdata> DerefMut for Function<'borrow, 'thread, UD> {
+	fn deref_mut(&mut self) -> &mut Self::Target {
+		&mut self.0
 	}
 }
