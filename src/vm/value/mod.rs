@@ -15,8 +15,10 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 use std::ffi::{c_void, CStr};
+use std::os::raw::c_int;
 
-use luau_sys::luau::{Closure, lua_checkstack, lua_pushnil, lua_pushvalue, lua_rawset, LUA_REGISTRYINDEX, lua_settop, lua_State, lua_Type_LUA_TBOOLEAN, lua_Type_LUA_TFUNCTION, lua_Type_LUA_TLIGHTUSERDATA, lua_Type_LUA_TNIL, lua_Type_LUA_TNUMBER, lua_Type_LUA_TSTRING, lua_Type_LUA_TTABLE, lua_Type_LUA_TTHREAD, lua_Type_LUA_TUSERDATA, lua_Type_LUA_TVECTOR, luaH_new, luaS_newlstr, size_t, StkId, Table, TString, TValue, Udata, Value as LValue};
+use luau_sys::luau::{Closure, lua_checkstack, lua_ref, lua_settop, lua_State, lua_Type_LUA_TBOOLEAN, lua_Type_LUA_TFUNCTION, lua_Type_LUA_TLIGHTUSERDATA, lua_Type_LUA_TNIL, lua_Type_LUA_TNUMBER, lua_Type_LUA_TSTRING, lua_Type_LUA_TTABLE, lua_Type_LUA_TTHREAD, lua_Type_LUA_TUSERDATA, lua_Type_LUA_TVECTOR, lua_unref, luaH_new, luaS_newlstr, size_t, StkId, Table, TString, TValue, Udata, Value as LValue};
+use types::function::Function;
 
 use crate::compiler::CompiledFunction;
 use crate::luau_sys::luau::{lua_remove, lua_tolstring, luau_load};
@@ -74,7 +76,7 @@ impl StackValue {
 pub struct Value<'borrow, 'thread: 'borrow, UD: ThreadUserdata> {
 	thread: &'borrow Thread<'thread, UD>,
 	value: StackValue,
-	key: [u8; 16]
+	ref_: c_int
 }
 
 impl Into<TValue> for StackValue {
@@ -127,7 +129,7 @@ impl<'borrow, 'thread: 'borrow, UD: ThreadUserdata + 'thread> Value<'borrow, 'th
 	/// garbage collection or have already been collected. Additionally, the
 	/// `TValue` must be valid.
 	pub unsafe fn produce(state: *mut lua_State, value: StackValue) -> Result<StkId, ()> {
-		if lua_checkstack(state as _, 1) != 0 {
+		if lua_checkstack(state, 1) != 0 {
 			return Err(())
 		}
 
@@ -135,13 +137,6 @@ impl<'borrow, 'thread: 'borrow, UD: ThreadUserdata + 'thread> Value<'borrow, 'th
 		*top = value.into();
 		(*state).top = top.offset(1);
 		Ok(top)
-	}
-
-	// Produces the key onto the stack using `produce_tvalue`. Unsafe because no
-	// bounds checking is performed and all stack functions are unsafe.
-	unsafe fn push_key(state: *mut lua_State, object: [u8; 16]) -> Result<StkId, ()> {
-		let key = luaS_newlstr(state, object.as_ptr() as _, 16);
-		Self::produce(state, StackValue::String(key))
 	}
 
 	// Produces the value onto the stack using `produce_tvalue`. Unsafe because
@@ -153,22 +148,21 @@ impl<'borrow, 'thread: 'borrow, UD: ThreadUserdata + 'thread> Value<'borrow, 'th
 	// Creates a new `Value` from the specified `TValue` and `lua_State`. Unsafe
 	// because `TValue` must not be invalid.
 	pub unsafe fn new(thread: &'borrow Thread<'thread, UD>, value: StackValue) -> Result<Self, ()> {
-		let key: [u8; 16] = rand::random();
+		let mut ref_: c_int = 0;
 
 		if value.is_collectible() {
-			if lua_checkstack(thread.as_ptr(), 3) != 0 {
+			let state = thread.as_ptr();
+
+			if lua_checkstack(state, 1) != 0 {
 				return Err(())
 			}
 
-			// garbage collectible. ORDER TYPE
-			lua_pushvalue(thread.as_ptr(), LUA_REGISTRYINDEX);
-			Self::push_key(thread.as_ptr(), key).expect("checkstack is not working?");
-			Self::produce(thread.as_ptr(), value).expect("checkstack is not working?");
-			lua_rawset(thread.as_ptr() as _, -3);
-			lua_settop(thread.as_ptr() as _, -1);
+			Self::produce(state, value).unwrap();
+			ref_ = lua_ref(state, -1);
+			lua_settop(state, -1);
 		}
 
-		Ok(Self { thread, value, key })
+		Ok(Self { thread, value, ref_ })
 	}
 
 	/// Creates a new `Value` from the `TValue` at the top of the specified
@@ -221,38 +215,28 @@ impl<'borrow, 'thread: 'borrow, UD: ThreadUserdata + 'thread> Value<'borrow, 'th
 		}
 	}
 
-	pub fn new_userdata(thread: &'borrow Thread<'thread, UD>) -> Result<Self, ()> {
+	pub fn new_userdata(_thread: &'borrow Thread<'thread, UD>) -> Result<Self, ()> {
 		todo!()
 	}
 
-	pub fn new_thread(thread: &'borrow Thread<'thread, UD>) -> Result<Self, ()> {
+	pub fn new_thread(_thread: &'borrow Thread<'thread, UD>) -> Result<Self, ()> {
 		todo!()
 	}
 
 	pub fn clone<'newborrow: 'borrow>(&'newborrow self) -> Result<Self, ()> {
 		unsafe { Value::<'newborrow, 'thread, UD>::new(self.thread, self.value) }
 	}
+
+	// /// Synchronously calls a Luau function, without support for yielding.
+	// pub fn call_sync<A: AsRef<[Value<UD>]>>(args: A) -> Result<Vec<Self>, Error> {
+	// 	todo!()
+	// }
 }
 
 impl<'borrow, 'thread: 'borrow, UD: ThreadUserdata> Drop for Value<'borrow, 'thread, UD> {
 	fn drop(&mut self) {
 		if self.value.is_collectible() {
-			// garbage collectible. ORDER TYPE
-			unsafe {
-				let state = self.thread.as_ptr();
-
-				// Only try to remove from registry if we have stack space
-				// It's not too important if the drop impl isn't run
-				// We don't need to panic just because we couldn't remove
-				// something from the registry
-				if lua_checkstack(state, 3) == 0 {
-					lua_pushvalue(state, LUA_REGISTRYINDEX);
-					Self::push_key(state, self.key).expect("checkstack is not working?");
-					lua_pushnil(state);
-					lua_rawset(state, -3);
-					lua_settop(state, -1);
-				}
-			}
+			unsafe { lua_unref(self.thread.as_ptr(), self.ref_); }
 		}
 	}
 }
