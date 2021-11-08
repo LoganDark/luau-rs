@@ -25,7 +25,7 @@ fn main() {
 
 	let chunkname = unsafe { CStr::from_bytes_with_nul_unchecked("=stuff\0".as_bytes()) };
 	let main_thread = vm.main_thread();
-	let function = main_thread.load_compiled(compiled, chunkname)
+	let _function = main_thread.load_compiled(compiled, chunkname)
 		.expect("failed to load function");
 
 	println!("all seems good for now");
