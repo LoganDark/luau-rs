@@ -169,7 +169,7 @@ impl<'borrow, 'thread: 'borrow, UD: ThreadUserdata + 'thread> Value<'borrow, 'th
 	/// `Thread`'s stack. Unsafe because stack functions are unsafe.
 	///
 	/// If `Err` is returned, the value is returned to the stack.
-	pub unsafe fn from_stack_top(thread: &'borrow Thread<'thread, UD>) -> Result<Self, ()> {
+	pub unsafe fn pop_from_stack(thread: &'borrow Thread<'thread, UD>) -> Result<Self, ()> {
 		let state = thread.as_ptr();
 		let top = (*state).top;
 		(*state).top = top.offset(-1);
@@ -203,7 +203,7 @@ impl<'borrow, 'thread: 'borrow, UD: ThreadUserdata + 'thread> Value<'borrow, 'th
 			let bytecode = bytecode.as_ref();
 
 			if luau_load(state, chunkname.as_ptr(), &bytecode[0] as *const u8 as _, bytecode.len() as _, 0) == 0 {
-				Self::from_stack_top(thread).map_err(|()| Error::OutOfStack)
+				Self::pop_from_stack(thread).map_err(|()| Error::OutOfStack)
 			} else {
 				// error is at the top of the stack
 				let mut length: size_t = 0;
