@@ -40,7 +40,7 @@ gluau_Buffer gluauU_strtobuf(const std::string &input) {
 template<typename T>
 	__always_inline Luau::FValue<T>** gluau_get_fvalues() {
 		size_t num = 0;
-		FOR_EACH_FFLAG(T, flag) {num++;}
+		FOR_EACH_FFLAG(T, flag) num++;
 		auto block = static_cast<Luau::FValue<T>**>(calloc(sizeof(void*), num + 1));
 
 		if (block) {
