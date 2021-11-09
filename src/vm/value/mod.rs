@@ -15,9 +15,9 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 use std::ffi::{c_void, CStr};
-use std::os::raw::c_int;
+use std::num::NonZeroU32;
 
-use luau_sys::luau::{Closure, lua_checkstack, lua_ref, lua_settop, lua_State, lua_Type_LUA_TBOOLEAN, lua_Type_LUA_TFUNCTION, lua_Type_LUA_TLIGHTUSERDATA, lua_Type_LUA_TNIL, lua_Type_LUA_TNUMBER, lua_Type_LUA_TSTRING, lua_Type_LUA_TTABLE, lua_Type_LUA_TTHREAD, lua_Type_LUA_TUSERDATA, lua_Type_LUA_TVECTOR, lua_unref, luaH_new, luaS_newlstr, size_t, StkId, Table, TString, TValue, Udata, Value as LValue};
+use luau_sys::luau::{Closure, lua_ref, lua_settop, lua_State, lua_Type_LUA_TBOOLEAN, lua_Type_LUA_TFUNCTION, lua_Type_LUA_TLIGHTUSERDATA, lua_Type_LUA_TNIL, lua_Type_LUA_TNUMBER, lua_Type_LUA_TSTRING, lua_Type_LUA_TTABLE, lua_Type_LUA_TTHREAD, lua_Type_LUA_TUSERDATA, lua_Type_LUA_TVECTOR, lua_unref, luaH_new, luaS_newlstr, size_t, StkId, Table, TString, TValue, Udata, Value as LValue};
 use types::function::Function;
 
 use crate::compiler::CompiledFunction;
@@ -76,7 +76,7 @@ impl StackValue {
 pub struct Value<'borrow, 'thread: 'borrow, UD: ThreadUserdata> {
 	thread: &'borrow Thread<'thread, UD>,
 	value: StackValue,
-	ref_: c_int
+	ref_: Option<NonZeroU32>
 }
 
 impl Into<TValue> for StackValue {
@@ -142,10 +142,6 @@ impl<'borrow, 'thread: 'borrow, UD: ThreadUserdata + 'thread> Value<'borrow, 'th
 	/// garbage collection or have already been collected. Additionally, the
 	/// `TValue` must be valid.
 	pub unsafe fn produce(state: *mut lua_State, value: StackValue) -> Result<StkId, ()> {
-		if lua_checkstack(state, 1) != 0 {
-			return Err(())
-		}
-
 		let top = (*state).top;
 		*top = value.into();
 		(*state).top = top.offset(1);
@@ -161,21 +157,16 @@ impl<'borrow, 'thread: 'borrow, UD: ThreadUserdata + 'thread> Value<'borrow, 'th
 	// Creates a new `Value` from the specified `TValue` and `lua_State`. Unsafe
 	// because `TValue` must not be invalid.
 	pub unsafe fn new(thread: &'borrow Thread<'thread, UD>, value: StackValue) -> Result<Self, ()> {
-		let mut ref_: c_int = 0;
+		let mut ref_: u32 = 0;
 
 		if value.is_collectible() {
 			let state = thread.as_ptr();
-
-			if lua_checkstack(state, 1) != 0 {
-				return Err(())
-			}
-
 			Self::produce(state, value).unwrap();
-			ref_ = lua_ref(state, -1);
+			ref_ = lua_ref(state, -1) as _;
 			lua_settop(state, -1);
 		}
 
-		Ok(Self { thread, value, ref_ })
+		Ok(Self { thread, value, ref_: NonZeroU32::new(ref_) })
 	}
 
 	/// Creates a new `Value` from the `TValue` at the top of the specified
@@ -248,8 +239,8 @@ impl<'borrow, 'thread: 'borrow, UD: ThreadUserdata + 'thread> Value<'borrow, 'th
 
 impl<'borrow, 'thread: 'borrow, UD: ThreadUserdata> Drop for Value<'borrow, 'thread, UD> {
 	fn drop(&mut self) {
-		if self.value.is_collectible() {
-			unsafe { lua_unref(self.thread.as_ptr(), self.ref_); }
+		if let Some(ref_) = self.ref_ {
+			unsafe { lua_unref(self.thread.as_ptr(), ref_.get() as _); }
 		}
 	}
 }
