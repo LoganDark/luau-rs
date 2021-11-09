@@ -19,6 +19,7 @@ use std::fmt::{Debug, Display, Formatter};
 use std::hint::unreachable_unchecked;
 use std::mem::MaybeUninit;
 use std::num::NonZeroU32;
+use std::pin::Pin;
 
 use luau_sys::luau::{lua_checkstack, lua_gettop, LUA_MULTRET, lua_pcall, lua_ref, lua_settop, lua_State, lua_Status, lua_unref, luaH_new, luaS_newlstr, StkId};
 pub use stack::StackValue;
@@ -163,7 +164,7 @@ impl<'borrow, 'thread: 'borrow, UD: ThreadUserdata + 'thread> Value<'borrow, 'th
 		todo!()
 	}
 
-	pub fn new_thread(_thread: &'borrow Thread<'thread, UD>) -> Result<Self, ()> {
+	pub fn new_thread(_thread: &'borrow Thread<'thread, UD>, _userdata: Pin<Box<UD>>) -> Result<Self, ()> {
 		todo!()
 	}
 
