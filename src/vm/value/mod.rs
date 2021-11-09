@@ -118,19 +118,6 @@ impl From<TValue> for StackValue {
 	}
 }
 
-pub enum DynValue<'borrow, 'thread: 'borrow, UD: ThreadUserdata> {
-	Nil,
-	Boolean(bool),
-	LightUserdata(*mut std::ffi::c_void),
-	Number(f64),
-	Vector([f32; 3]),
-	String(Value<'borrow, 'thread, UD>),
-	Table(Value<'borrow, 'thread, UD>),
-	Function(Function<'borrow, 'thread, UD>),
-	Userdata(Value<'borrow, 'thread, UD>),
-	Thread(Value<'borrow, 'thread, UD>)
-}
-
 impl<'borrow, 'thread: 'borrow, UD: ThreadUserdata + 'thread> Value<'borrow, 'thread, UD> {
 	/// Produces a `TValue` at the top of the stack. The stack is checked for
 	/// space, and, if none exists, `Err` is returned. Otherwise, the pointer to
