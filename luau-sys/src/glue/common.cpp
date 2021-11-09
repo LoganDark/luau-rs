@@ -102,34 +102,34 @@ GLUE_API struct gluau_OptionalFValue gluau_find_fint(struct gluau_Buffer name) {
 	};
 }
 
-GLUE_API void** gluau_get_fflags() {
-	return reinterpret_cast<void**>(gluau_get_fvalues<bool>());
+GLUE_API FFlag* gluau_get_fflags() {
+	return reinterpret_cast<FFlag*>(gluau_get_fvalues<bool>());
 }
 
-GLUE_API void** gluau_get_fints() {
-	return reinterpret_cast<void**>(gluau_get_fvalues<int>());
+GLUE_API FInt* gluau_get_fints() {
+	return reinterpret_cast<FInt*>(gluau_get_fvalues<int>());
 }
 
-GLUE_API struct gluau_Buffer gluau_get_fflag_name(void* fflag) {
+GLUE_API struct gluau_Buffer gluau_get_fflag_name(FFlag fflag) {
 	return gluau_fvalue_name<bool>(fflag);
 }
 
-GLUE_API struct gluau_Buffer gluau_get_fint_name(void* fflag) {
+GLUE_API struct gluau_Buffer gluau_get_fint_name(FInt fflag) {
 	return gluau_fvalue_name<int>(fflag);
 }
 
-GLUE_API bool gluau_fflag_get(void* fflag) {
+GLUE_API bool gluau_fflag_get(FFlag fflag) {
 	return gluau_fvalue_get<bool>(fflag);
 }
 
-GLUE_API int gluau_fint_get(void* fint) {
+GLUE_API int gluau_fint_get(FInt fint) {
 	return gluau_fvalue_get<int>(fint);
 }
 
-GLUE_API void gluau_fflag_set(void* fflag, bool value) {
+GLUE_API void gluau_fflag_set(FFlag fflag, bool value) {
 	return gluau_fvalue_set(fflag, value);
 }
 
-GLUE_API void gluau_fint_set(void* fint, int value) {
+GLUE_API void gluau_fint_set(FInt fint, int value) {
 	return gluau_fvalue_set(fint, value);
 }

@@ -26,16 +26,18 @@ mod __sealed {
 	use std::ptr::NonNull;
 
 	use luau_sys::glue;
-	use luau_sys::glue::{gluau_Buffer, gluau_fflag_get, gluau_find_fflag, gluau_find_fint, gluau_fint_get, gluau_fint_set, gluau_get_fflag_name, gluau_get_fflags, gluau_get_fint_name, gluau_get_fints};
+	use luau_sys::glue::{FFlag, FInt, gluau_Buffer, gluau_fflag_get, gluau_find_fflag, gluau_find_fint, gluau_fint_get, gluau_fint_set, gluau_get_fflag_name, gluau_get_fflags, gluau_get_fint_name, gluau_get_fints};
 
 	use crate::luau_sys::glue::{gluau_fflag_set, gluau_OptionalFValue};
 
 	pub trait FValueType: Copy {
-		fn find(search: &str) -> Option<*mut c_void>;
-		fn list() -> Option<Vec<*mut c_void>>;
-		fn name(fvalue: *mut c_void) -> &'static str;
-		fn value(fvalue: *mut c_void) -> Self;
-		fn set(self, fvalue: *mut c_void);
+		type Inner: Copy;
+
+		fn find(search: &str) -> Option<Self::Inner>;
+		fn list() -> Option<Vec<Self::Inner>>;
+		fn name(fvalue: Self::Inner) -> &'static str;
+		fn value(fvalue: Self::Inner) -> Self;
+		fn set(self, fvalue: Self::Inner);
 	}
 
 	fn str2buf(str: &str) -> gluau_Buffer {
@@ -80,45 +82,49 @@ mod __sealed {
 	}
 
 	impl FValueType for bool {
-		fn find(search: &str) -> Option<*mut c_void> {
+		type Inner = FInt;
+
+		fn find(search: &str) -> Option<Self::Inner> {
 			optional_fvalue_to_optional_fvalue(unsafe { gluau_find_fflag(str2buf(search)) })
 		}
 
-		fn list() -> Option<Vec<*mut c_void>> {
+		fn list() -> Option<Vec<Self::Inner>> {
 			unsafe { fvalues2vec(gluau_get_fflags()) }
 		}
 
-		fn name(fvalue: *mut c_void) -> &'static str {
+		fn name(fvalue: Self::Inner) -> &'static str {
 			unsafe { buf2str(gluau_get_fflag_name(fvalue)) }
 		}
 
-		fn value(fvalue: *mut c_void) -> Self {
+		fn value(fvalue: Self::Inner) -> Self {
 			unsafe { gluau_fflag_get(fvalue) }
 		}
 
-		fn set(self, fvalue: *mut c_void) {
+		fn set(self, fvalue: Self::Inner) {
 			unsafe { gluau_fflag_set(fvalue, self) }
 		}
 	}
 
 	impl FValueType for c_int {
-		fn find(search: &str) -> Option<*mut c_void> {
+		type Inner = FFlag;
+
+		fn find(search: &str) -> Option<Self::Inner> {
 			optional_fvalue_to_optional_fvalue(unsafe { gluau_find_fint(str2buf(search)) })
 		}
 
-		fn list() -> Option<Vec<*mut c_void>> {
+		fn list() -> Option<Vec<Self::Inner>> {
 			unsafe { fvalues2vec(gluau_get_fints()) }
 		}
 
-		fn name(fvalue: *mut c_void) -> &'static str {
+		fn name(fvalue: Self::Inner) -> &'static str {
 			unsafe { buf2str(gluau_get_fint_name(fvalue)) }
 		}
 
-		fn value(fvalue: *mut c_void) -> Self {
+		fn value(fvalue: Self::Inner) -> Self {
 			unsafe { gluau_fint_get(fvalue) }
 		}
 
-		fn set(self, fvalue: *mut c_void) {
+		fn set(self, fvalue: Self::Inner) {
 			unsafe { gluau_fint_set(fvalue, self) }
 		}
 	}
@@ -127,7 +133,7 @@ mod __sealed {
 #[repr(transparent)]
 #[derive(Clone, Eq, PartialEq, Debug)]
 pub struct FValue<T: FValueType> {
-	inner: *mut c_void,
+	inner: T::Inner,
 	phantom: PhantomData<T>
 }
 
