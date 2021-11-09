@@ -14,16 +14,13 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-use luau::ast::ParseOptions;
-use luau::compiler::CompileOptions;
+use luau::vm::Luau;
 
 fn main() {
 	let source = r#"local
 
 print(x)"#;
-	let compile_opts = CompileOptions::default();
-	let parse_opts = ParseOptions::default();
-	let result = luau::compiler::compile(source, &compile_opts, &parse_opts);
+	let result = Luau::compile(source);
 	println!("source code:\n{}\n", source);
 	println!("result: {:#?}", result)
 }
