@@ -20,7 +20,7 @@ pub mod luau {
 	include!(concat!(env!("OUT_DIR"), "/vm.rs"));
 }
 
-#[cfg(any(feature = "ast", feature = "compiler", feature = "analysis", feature = "vm"))]
+#[cfg(any(feature = "glue"))]
 pub mod glue {
 	include!(concat!(env!("OUT_DIR"), "/glue.rs"));
 }

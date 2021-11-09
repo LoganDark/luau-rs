@@ -10,11 +10,12 @@ license = 'GPLv3'
 members = ['luau-sys']
 
 [features]
-ast = ['luau-sys/ast']
-compiler = ['ast', 'luau-sys/compiler']
-analysis = ['ast', 'luau-sys/analysis']
-vm = ['luau-sys/vm']
-default = ['ast', 'compiler', 'analysis', 'vm']
+link = ['luau-sys/link']
+ast = ['luau-sys/glue', 'luau-sys/ast']
+compiler = ['luau-sys/glue', 'ast', 'luau-sys/compiler']
+analysis = ['luau-sys/glue', 'ast', 'luau-sys/analysis']
+vm = ['luau-sys/glue', 'luau-sys/vm']
+default = ['link', 'ast', 'compiler', 'analysis', 'vm']
 
 [dependencies]
 luau-sys = { path = 'luau-sys', version = '0.1.0' }

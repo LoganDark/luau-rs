@@ -8,10 +8,12 @@ license = 'GPLv3'
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [features]
-ast = []
-compiler = ['ast']
-analysis = ['ast']
-vm = []
+link = []
+glue = []
+ast = ['glue']
+compiler = ['glue', 'ast']
+analysis = ['glue', 'ast']
+vm = ['glue']
 
 [dependencies]
 
