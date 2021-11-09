@@ -14,18 +14,21 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-pub extern crate luau_sys;
+use std::os::raw::c_int;
 
-pub mod fvalue;
+use luau::fvalue::FValue;
+use luau::vm::Luau;
 
-#[cfg(feature = "ast")]
-pub mod ast;
+fn main() {
+	// the Luau compiler initializes a lot of the more interesting FFlags
+	{ let _ = Luau::compile(""); }
 
-#[cfg(feature = "compiler")]
-pub mod compiler;
+	for mut fflag in FValue::<bool>::list() {
+		fflag.set(true);
+		println!("{}: {}", fflag.name(), fflag.value())
+	}
 
-#[cfg(feature = "analysis")]
-pub mod analysis;
-
-#[cfg(feature = "vm")]
-pub mod vm;
+	for fint in FValue::<c_int>::list() {
+		println!("{}: {}", fint.name(), fint.value())
+	}
+}

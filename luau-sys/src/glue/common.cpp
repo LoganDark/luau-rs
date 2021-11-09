@@ -18,6 +18,8 @@
 #include "stdlib.h" // NOLINT(modernize-deprecated-headers)
 #include "string.h" // NOLINT(modernize-deprecated-headers)
 
+#include <Luau/Common.h>
+
 gluau_Buffer gluauU_strtobuf(const std::string &input) {
 	size_t len = input.length();
 	char* block = static_cast<char*>(malloc(len));
@@ -31,4 +33,103 @@ gluau_Buffer gluauU_strtobuf(const std::string &input) {
 		.data = block,
 		.len = len
 	};
+}
+
+#define FOR_EACH_FFLAG(T, v) for (Luau::FValue<T>* v = Luau::FValue<T>::list; v; v = v->next) // NOLINT(bugprone-macro-parentheses)
+
+template<typename T>
+	__always_inline Luau::FValue<T>** gluau_get_fvalues() {
+		size_t num = 0;
+		FOR_EACH_FFLAG(T, flag) {num++;}
+		auto block = static_cast<Luau::FValue<T>**>(calloc(sizeof(void*), num + 1));
+
+		if (block) {
+			size_t index = 0;
+			FOR_EACH_FFLAG(T, flag) {
+				block[index++] = flag;
+			}
+		}
+
+		return block;
+	}
+
+template<typename T>
+	__always_inline Luau::FValue<T>* gluau_find_fvalue(struct gluau_Buffer name) {
+		FOR_EACH_FFLAG(T, flag) {
+			if (strlen(flag->name) == name.len && memcmp(flag->name, name.data, name.len) == 0) {
+				return flag;
+			}
+		}
+
+		return nullptr;
+	}
+
+template<typename T>
+	__always_inline gluau_Buffer gluau_fvalue_name(void* fvalue) {
+		auto flag = static_cast<Luau::FValue<T>*>(fvalue);
+
+		return {
+			.data = const_cast<char*>(flag->name),
+			.len = strlen(flag->name)
+		};
+	}
+
+template<typename T>
+	__always_inline T gluau_fvalue_get(void* fvalue) {
+		return static_cast<Luau::FValue<T>*>(fvalue)->value;
+	}
+
+template<typename T>
+	__always_inline void gluau_fvalue_set(void* fvalue, T value) {
+		static_cast<Luau::FValue<T>*>(fvalue)->value = value;
+	}
+
+GLUE_API struct gluau_OptionalFValue gluau_find_fflag(struct gluau_Buffer name) {
+	auto found = gluau_find_fvalue<bool>(name);
+
+	return {
+		.presence = found ? gluau_Optionality::Some : gluau_Optionality::None,
+		.value = found
+	};
+}
+
+GLUE_API struct gluau_OptionalFValue gluau_find_fint(struct gluau_Buffer name) {
+	auto found = gluau_find_fvalue<int>(name);
+
+	return {
+		.presence = found ? gluau_Optionality::Some : gluau_Optionality::None,
+		.value = found
+	};
+}
+
+GLUE_API void** gluau_get_fflags() {
+	return reinterpret_cast<void**>(gluau_get_fvalues<bool>());
+}
+
+GLUE_API void** gluau_get_fints() {
+	return reinterpret_cast<void**>(gluau_get_fvalues<int>());
+}
+
+GLUE_API struct gluau_Buffer gluau_get_fflag_name(void* fflag) {
+	return gluau_fvalue_name<bool>(fflag);
+}
+
+GLUE_API struct gluau_Buffer gluau_get_fint_name(void* fflag) {
+	return gluau_fvalue_name<int>(fflag);
+}
+
+GLUE_API bool gluau_fflag_get(void* fflag) {
+	return gluau_fvalue_get<bool>(fflag);
+}
+
+GLUE_API int gluau_fint_get(void* fint) {
+	return gluau_fvalue_get<int>(fint);
+}
+
+GLUE_API void gluau_fflag_set(void* fflag, bool value) {
+	return gluau_fvalue_set(fflag, value);
+}
+
+GLUE_API void gluau_fint_set(void* fint, int value) {
+	return gluau_fvalue_set(fint, value);
 }

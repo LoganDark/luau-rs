@@ -16,6 +16,8 @@
 #pragma once
 
 #include <stddef.h> // NOLINT(modernize-deprecated-headers)
+#include <stdbool.h> // NOLINT(modernize-deprecated-headers)
+#include <stdint.h> // NOLINT(modernize-deprecated-headers)
 
 #ifdef __cplusplus
 #define GLUE_API extern "C"
@@ -27,3 +29,27 @@ struct gluau_Buffer {
 	char* data;
 	size_t len;
 };
+
+enum gluau_Optionality : uint8_t {
+	Some, None
+};
+
+struct gluau_OptionalFValue {
+	enum gluau_Optionality presence;
+	void* value;
+};
+
+GLUE_API struct gluau_OptionalFValue gluau_find_fflag(struct gluau_Buffer name);
+GLUE_API struct gluau_OptionalFValue gluau_find_fint(struct gluau_Buffer name);
+
+GLUE_API void** gluau_get_fflags();
+GLUE_API void** gluau_get_fints();
+
+GLUE_API struct gluau_Buffer gluau_get_fflag_name(void* fflag);
+GLUE_API struct gluau_Buffer gluau_get_fint_name(void* fflag);
+
+GLUE_API bool gluau_fflag_get(void* fflag);
+GLUE_API int gluau_fint_get(void* fint);
+
+GLUE_API void gluau_fflag_set(void* fflag, bool value);
+GLUE_API void gluau_fint_set(void* fint, int value);
