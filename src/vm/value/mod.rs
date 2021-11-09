@@ -238,8 +238,8 @@ impl<'borrow, 'thread: 'borrow, UD: ThreadUserdata + 'thread> Value<'borrow, 'th
 		}
 
 		let nresults = unsafe {
-			self.push_value(state).map_err(|_| Error::OutOfStack)?;
 			let base = lua_gettop(state);
+			self.push_value(state).map_err(|_| Error::OutOfStack)?;
 
 			for value in args {
 				value.push_value(state).map_err(|_| Error::OutOfStack)?;
