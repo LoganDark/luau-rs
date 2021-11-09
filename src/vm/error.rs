@@ -16,8 +16,6 @@
 
 use luau_sys::luau::{lua_settop, lua_State, lua_tolstring, size_t};
 
-use crate::vm::value::StackValue;
-
 #[derive(Clone, Eq, PartialEq, Debug, thiserror::Error)]
 pub enum Error {
 	/// There was a runtime error during execution. Only the error message is

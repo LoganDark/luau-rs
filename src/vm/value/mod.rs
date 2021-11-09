@@ -15,6 +15,7 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 use std::ffi::{c_void, CStr};
+use std::fmt::{Debug, Formatter};
 use std::hint::unreachable_unchecked;
 use std::mem::MaybeUninit;
 use std::num::NonZeroU32;
@@ -78,11 +79,24 @@ impl StackValue {
 /// can safely produce its value in the Luau stack at any time, so table
 /// accesses, function calls, operations and so on are possible without managing
 /// the unsafe stack manually from Rust.
-#[derive(Clone, Debug)]
+#[derive(Clone)]
 pub struct Value<'borrow, 'thread: 'borrow, UD: ThreadUserdata> {
 	thread: &'borrow Thread<'thread, UD>,
 	value: StackValue,
 	ref_: Option<NonZeroU32>
+}
+
+impl<'borrow, 'thread: 'borrow, UD: ThreadUserdata> Debug for Value<'borrow, 'thread, UD> {
+	fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+		if let Some(ref ref_) = self.ref_ {
+			f.debug_struct("Value")
+				.field("value", &self.value)
+				.field("ref", ref_)
+				.finish()
+		} else {
+			f.debug_tuple("Value").field(&self.value).finish()
+		}
+	}
 }
 
 impl Into<TValue> for StackValue {
