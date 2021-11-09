@@ -29,6 +29,7 @@ use crate::vm::thread::ThreadUserdata;
 
 /// Represents an owned Luau virtual machine. All interaction with the VM must
 /// be done through this struct; it is the logical owner of the virtual machine.
+#[derive(Debug)]
 pub struct Luau<UD: ThreadUserdata> {
 	// ManuallyDrop: we free the VM manually on drop
 	// Box: we logically own this value

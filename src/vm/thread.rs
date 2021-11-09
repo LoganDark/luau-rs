@@ -29,6 +29,7 @@ pub trait ThreadUserdata {}
 
 impl ThreadUserdata for () {}
 
+#[derive(Clone, Debug)]
 pub struct Thread<'a, UD: ThreadUserdata> {
 	vm: &'a Luau<UD>,
 	state: &'a UnsafeCell<lua_State>,
@@ -69,7 +70,7 @@ impl<'a, UD: ThreadUserdata> Thread<'a, UD> {
 	}
 
 	pub fn load_compiled<'b>(&'b self, compiled: CompiledFunction, chunkname: &CStr) -> Result<Function<'b, '_, UD>, Error> {
-		Ok(Function(Value::new_function(&self, compiled, chunkname)?))
+		Ok(Function(Value::load_function(&self, compiled, chunkname)?))
 	}
 
 	pub fn load(&self, source: &str, chunkname: &CStr) -> Result<Function<UD>, LoadError> {

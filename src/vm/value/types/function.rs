@@ -18,6 +18,7 @@ use std::ops::{Deref, DerefMut};
 
 use crate::vm::{ThreadUserdata, Value};
 
+#[derive(Debug)]
 pub struct Function<'borrow, 'thread: 'borrow, UD: ThreadUserdata>(pub Value<'borrow, 'thread, UD>);
 
 impl<'borrow, 'thread: 'borrow, UD: ThreadUserdata> Deref for Function<'borrow, 'thread, UD> {

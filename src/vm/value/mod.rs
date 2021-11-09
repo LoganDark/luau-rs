@@ -15,13 +15,14 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 use std::ffi::{c_void, CStr};
+use std::hint::unreachable_unchecked;
+use std::mem::MaybeUninit;
 use std::num::NonZeroU32;
 
-use luau_sys::luau::{Closure, lua_ref, lua_settop, lua_State, lua_Type_LUA_TBOOLEAN, lua_Type_LUA_TFUNCTION, lua_Type_LUA_TLIGHTUSERDATA, lua_Type_LUA_TNIL, lua_Type_LUA_TNUMBER, lua_Type_LUA_TSTRING, lua_Type_LUA_TTABLE, lua_Type_LUA_TTHREAD, lua_Type_LUA_TUSERDATA, lua_Type_LUA_TVECTOR, lua_unref, luaH_new, luaS_newlstr, size_t, StkId, Table, TString, TValue, Udata, Value as LValue};
-use types::function::Function;
+use luau_sys::luau::{Closure, lua_checkstack, lua_gettop, LUA_MULTRET, lua_pcall, lua_ref, lua_settop, lua_State, lua_Status, lua_Type_LUA_TBOOLEAN, lua_Type_LUA_TFUNCTION, lua_Type_LUA_TLIGHTUSERDATA, lua_Type_LUA_TNIL, lua_Type_LUA_TNUMBER, lua_Type_LUA_TSTRING, lua_Type_LUA_TTABLE, lua_Type_LUA_TTHREAD, lua_Type_LUA_TUSERDATA, lua_Type_LUA_TVECTOR, lua_unref, luaH_new, luaS_newlstr, StkId, Table, TString, TValue, Udata, Value as LValue};
 
 use crate::compiler::CompiledFunction;
-use crate::luau_sys::luau::{lua_remove, lua_tolstring, luau_load};
+use crate::luau_sys::luau::luau_load;
 use crate::vm::{Error, Thread, ThreadUserdata};
 
 pub mod types;
@@ -59,6 +60,10 @@ impl StackValue {
 			_ => false
 		}
 	}
+
+	pub unsafe fn stack(state: *mut lua_State) -> Vec<Self> {
+		std::slice::from_raw_parts((*state).base, lua_gettop(state) as _).iter().copied().map(Self::from).collect()
+	}
 }
 
 /// The Value struct represents a reference to a Luau value. If the value is
@@ -73,6 +78,7 @@ impl StackValue {
 /// can safely produce its value in the Luau stack at any time, so table
 /// accesses, function calls, operations and so on are possible without managing
 /// the unsafe stack manually from Rust.
+#[derive(Clone, Debug)]
 pub struct Value<'borrow, 'thread: 'borrow, UD: ThreadUserdata> {
 	thread: &'borrow Thread<'thread, UD>,
 	value: StackValue,
@@ -129,15 +135,15 @@ impl<'borrow, 'thread: 'borrow, UD: ThreadUserdata + 'thread> Value<'borrow, 'th
 	/// garbage collection or have already been collected. Additionally, the
 	/// `TValue` must be valid.
 	pub unsafe fn produce(state: *mut lua_State, value: StackValue) -> Result<StkId, ()> {
-		let top = (*state).top;
-		*top = value.into();
-		(*state).top = top.offset(1);
-		Ok(top)
+		let last = (*state).top;
+		*last = value.into();
+		(*state).top = last.offset(1);
+		Ok(last)
 	}
 
 	// Produces the value onto the stack using `produce_tvalue`. Unsafe because
 	// no bounds checking is performed and all stack functions are unsafe.
-	pub unsafe fn push_value(&mut self, state: &mut lua_State) -> Result<StkId, ()> {
+	pub unsafe fn push_value(&self, state: *mut lua_State) -> Result<StkId, ()> {
 		Self::produce(state, self.value)
 	}
 
@@ -150,26 +156,29 @@ impl<'borrow, 'thread: 'borrow, UD: ThreadUserdata + 'thread> Value<'borrow, 'th
 			let state = thread.as_ptr();
 			Self::produce(state, value).unwrap();
 			ref_ = lua_ref(state, -1) as _;
-			lua_settop(state, -1);
+			lua_settop(state, -2);
 		}
 
 		Ok(Self { thread, value, ref_: NonZeroU32::new(ref_) })
 	}
 
+	/// Returns the `StackValue` of this `Value`. Note that the `StackValue`
+	/// will not necessarily stay alive if the `Value` is dropped!
+	pub fn value(&self) -> StackValue {
+		self.value
+	}
+
 	/// Creates a new `Value` from the `TValue` at the top of the specified
 	/// `Thread`'s stack. Unsafe because stack functions are unsafe.
-	///
-	/// If `Err` is returned, the value is returned to the stack.
-	pub unsafe fn pop_from_stack(thread: &'borrow Thread<'thread, UD>) -> Result<Self, ()> {
+	pub unsafe fn pop_from_stack(thread: &'borrow Thread<'thread, UD>) -> Self {
 		let state = thread.as_ptr();
-		let top = (*state).top;
-		(*state).top = top.offset(-1);
+		let last = (*state).top.offset(-1);
+		(*state).top = last;
 
-		if let Ok(val) = Self::new(thread, (*top).into()) {
-			Ok(val)
+		if let Ok(val) = Self::new(thread, (*last).into()) {
+			val
 		} else {
-			(*state).top = top;
-			Err(())
+			unreachable_unchecked()
 		}
 	}
 
@@ -188,20 +197,15 @@ impl<'borrow, 'thread: 'borrow, UD: ThreadUserdata + 'thread> Value<'borrow, 'th
 		}
 	}
 
-	pub fn new_function(thread: &'borrow Thread<'thread, UD>, bytecode: CompiledFunction, chunkname: &CStr) -> Result<Self, Error> {
+	pub fn load_function(thread: &'borrow Thread<'thread, UD>, bytecode: CompiledFunction, chunkname: &CStr) -> Result<Self, Error> {
 		unsafe {
 			let state = thread.as_ptr();
 			let bytecode = bytecode.as_ref();
 
 			if luau_load(state, chunkname.as_ptr(), &bytecode[0] as *const u8 as _, bytecode.len() as _, 0) == 0 {
-				Self::pop_from_stack(thread).map_err(|()| Error::OutOfStack)
+				Ok(Self::pop_from_stack(thread))
 			} else {
-				// error is at the top of the stack
-				let mut length: size_t = 0;
-				let data = lua_tolstring(state, -1, &mut length as _);
-				lua_remove(state, -1);
-				// Clone so that the string stays valid even if GCed
-				Err(Error::Runtime(String::from_raw_parts(data as _, length as _, length as _).clone()))
+				Err(Error::pop_runtime_error(state))
 			}
 		}
 	}
@@ -218,10 +222,60 @@ impl<'borrow, 'thread: 'borrow, UD: ThreadUserdata + 'thread> Value<'borrow, 'th
 		unsafe { Value::<'newborrow, 'thread, UD>::new(self.thread, self.value) }
 	}
 
-	// /// Synchronously calls a Luau function, without support for yielding.
-	// pub fn call_sync<A: AsRef<[Value<UD>]>>(args: A) -> Result<Vec<Self>, Error> {
-	// 	todo!()
-	// }
+	/// Sychronously calls a Luau function, without support for yielding. If the
+	/// called code attempts to yield, an exception is raised and an Error is
+	/// returned.
+	pub fn call_sync<A: AsRef<[Value<'borrow, 'thread, UD>]>>(&self, args: A) -> Result<Vec<Self>, Error> {
+		if !matches!(self.value, StackValue::Function(_)) {
+			panic!("attempt to call a non-function");
+		}
+
+		let state = self.thread.as_ptr();
+		let args = args.as_ref();
+
+		if unsafe { lua_checkstack(state, (args.len() + 1) as _) } == 0 {
+			return Err(Error::OutOfStack)
+		}
+
+		let nresults = unsafe {
+			self.push_value(state).map_err(|_| Error::OutOfStack)?;
+			let base = lua_gettop(state);
+
+			for value in args {
+				value.push_value(state).map_err(|_| Error::OutOfStack)?;
+			}
+
+			match lua_pcall(state, args.len() as _, LUA_MULTRET, 0) as lua_Status {
+				luau_sys::luau::lua_Status_LUA_OK => (lua_gettop(state) - base) as usize,
+				luau_sys::luau::lua_Status_LUA_YIELD => return Err(Error::Yielded),
+				luau_sys::luau::lua_Status_LUA_ERRRUN => return Err(Error::pop_runtime_error(state)),
+				luau_sys::luau::lua_Status_LUA_ERRMEM => return Err(Error::OutOfStack),
+				whatever => {
+					let unknown_string = format!("unknown ({})", whatever);
+					panic!("Unexpected lua_pcall status encountered: {}", match whatever {
+						luau_sys::luau::lua_Status_LUA_OK => "LUA_OK",
+						luau_sys::luau::lua_Status_LUA_YIELD => "LUA_YIELD",
+						luau_sys::luau::lua_Status_LUA_ERRRUN => "LUA_ERRRUN",
+						luau_sys::luau::lua_Status_LUA_ERRSYNTAX => "LUA_ERRSYNTAX",
+						luau_sys::luau::lua_Status_LUA_ERRMEM => "LUA_ERRMEM",
+						luau_sys::luau::lua_Status_LUA_ERRERR => "LUA_ERRERR",
+						luau_sys::luau::lua_Status_LUA_BREAK => "LUA_BREAK",
+						_ => &unknown_string
+					})
+				}
+			}
+		};
+
+		let mut results = Vec::new();
+		results.resize_with(nresults, || MaybeUninit::uninit());
+
+		for slot in results.iter_mut().rev() {
+			*slot = MaybeUninit::new(unsafe { Self::pop_from_stack(self.thread) })
+		}
+
+		// SAFETY: All values have been initialized from the Lua stack
+		Ok(unsafe { std::mem::transmute(results) })
+	}
 }
 
 impl<'borrow, 'thread: 'borrow, UD: ThreadUserdata> Drop for Value<'borrow, 'thread, UD> {

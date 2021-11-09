@@ -16,17 +16,20 @@
 
 use std::ffi::CStr;
 
-use luau::vm::Luau;
+use luau::vm::{Luau, StackValue};
 
 fn main() {
 	let vm = Luau::new().expect("failed to create Luau VM");
 	let compiled = Luau::compile("print('Hello, World!')")
 		.expect("failed to compile function");
 
-	let chunkname = unsafe { CStr::from_bytes_with_nul_unchecked("=stuff\0".as_bytes()) };
+	let chunkname = CStr::from_bytes_with_nul(b"=basic_run.luau\0").expect("die");
 	let main_thread = vm.main_thread();
-	let _function = main_thread.load_compiled(compiled, chunkname)
+	let function = main_thread.load_compiled(compiled, chunkname)
 		.expect("failed to load function");
 
-	println!("all seems good for now");
+	println!("{:?}", function.call_sync([]));
+
+	// assert stack usage is balanced
+	assert_eq!(unsafe { StackValue::stack(main_thread.as_ptr()) }, Vec::new());
 }

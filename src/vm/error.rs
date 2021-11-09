@@ -14,6 +14,10 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+use luau_sys::luau::{lua_settop, lua_State, lua_tolstring, size_t};
+
+use crate::vm::value::StackValue;
+
 #[derive(Clone, Eq, PartialEq, Debug, thiserror::Error)]
 pub enum Error {
 	/// There was a runtime error during execution. Only the error message is
@@ -24,5 +28,20 @@ pub enum Error {
 	/// There wasn't enough stack space available to perform the requested
 	/// operation.
 	#[error("out of stack space")]
-	OutOfStack
+	OutOfStack,
+
+	/// The called function yielded in a non-yieldable context.
+	#[error("unexpected yield from a non-yieldable context")]
+	Yielded
+}
+
+impl Error {
+	pub(crate) unsafe fn pop_runtime_error(state: *mut lua_State) -> Self {
+		// error is at the top of the stack
+		let mut length: size_t = 0;
+		let data = lua_tolstring(state, -1, &mut length as _);
+		let string = std::str::from_utf8_unchecked(std::slice::from_raw_parts(data as _, length as _)).to_string();
+		lua_settop(state, -2);
+		Error::Runtime(string)
+	}
 }

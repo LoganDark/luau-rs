@@ -14,8 +14,6 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-use std::ffi::c_void;
-use std::hint::unreachable_unchecked;
 use std::marker::PhantomData;
 
 use __sealed::FValueType;
@@ -48,7 +46,7 @@ mod __sealed {
 	}
 
 	fn optional_fvalue_to_optional_fvalue(optional_fvalue: gluau_OptionalFValue) -> Option<*mut c_void> {
-		match unsafe { optional_fvalue } {
+		match optional_fvalue {
 			gluau_OptionalFValue { presence: glue::gluau_Optionality_Some, value } => {
 				Some(value)
 			}
