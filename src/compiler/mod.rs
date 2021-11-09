@@ -15,6 +15,7 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 use std::fmt::{Display, Formatter};
+use std::num::NonZeroU32;
 
 use crate::ast::{ParseOptions, Span};
 
@@ -65,8 +66,8 @@ impl Default for CompileOptions {
 }
 
 impl CompileOptions {
-	pub fn set_bytecode_version(&mut self, version: u32) -> &mut Self {
-		self.0.bytecodeVersion = version as _;
+	pub fn set_bytecode_version(&mut self, version: NonZeroU32) -> &mut Self {
+		self.0.bytecodeVersion = version.get() as _;
 		self
 	}
 
