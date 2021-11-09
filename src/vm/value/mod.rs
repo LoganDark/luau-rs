@@ -126,6 +126,11 @@ impl<'borrow, 'thread: 'borrow, UD: ThreadUserdata + 'thread> Value<'borrow, 'th
 		}
 	}
 
+	pub fn new_value(thread: &'borrow Thread<'thread, UD>, value: StackValue) -> Result<Self, ()> {
+		assert!(!value.is_collectible(), "value must not be collectible");
+		unsafe { Self::new(thread, value) }
+	}
+
 	pub fn new_string<B: AsRef<[u8]>>(thread: &'borrow Thread<'thread, UD>, bytes: B) -> Result<Self, ()> {
 		unsafe {
 			let bytes = bytes.as_ref();

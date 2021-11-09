@@ -24,7 +24,7 @@ use luau_sys::luau::lua_State;
 use crate::compiler::{compile, CompiledFunction, CompileError};
 use crate::vm::{Error, Luau, Value};
 use crate::vm::global::ptr_to_ref;
-use crate::vm::types::function::Function;
+use crate::vm::types::Function;
 
 pub trait ThreadUserdata {}
 
