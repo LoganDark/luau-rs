@@ -14,6 +14,8 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+use bstr::{BStr, BString};
+
 use luau_sys::luau::{lua_settop, lua_State, lua_tolstring, size_t};
 
 #[derive(Clone, Eq, PartialEq, Debug, thiserror::Error)]
@@ -21,7 +23,7 @@ pub enum Error {
 	/// There was a runtime error during execution. Only the error message is
 	/// available. Other information (tracebacks) may be obtainable externally.
 	#[error("{0}")]
-	Runtime(String),
+	Runtime(BString),
 
 	/// There wasn't enough stack space available to perform the requested
 	/// operation.
@@ -38,8 +40,8 @@ impl Error {
 		// error is at the top of the stack
 		let mut length: size_t = 0;
 		let data = lua_tolstring(state, -1, &mut length as _);
-		let string = std::str::from_utf8_unchecked(std::slice::from_raw_parts(data as _, length as _)).to_string();
+		let message = <BString as From<&BStr>>::from(std::slice::from_raw_parts(data as *const u8, length as _).into());
 		lua_settop(state, -2);
-		Error::Runtime(string)
+		Error::Runtime(message)
 	}
 }

@@ -14,12 +14,32 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+use std::convert::TryFrom;
+use std::fmt::{Display, Formatter};
 use std::ops::{Deref, DerefMut};
 
-use crate::vm::{ThreadUserdata, Value};
+use crate::vm::{StackValue, ThreadUserdata, Value};
 
 #[derive(Debug)]
-pub struct Function<'borrow, 'thread: 'borrow, UD: ThreadUserdata>(pub Value<'borrow, 'thread, UD>);
+pub struct Function<'borrow, 'thread: 'borrow, UD: ThreadUserdata>(Value<'borrow, 'thread, UD>);
+
+impl<'borrow, 'thread: 'borrow, UD: ThreadUserdata> Display for Function<'borrow, 'thread, UD> {
+	fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+		Display::fmt(&self.0, f)
+	}
+}
+
+impl<'borrow, 'thread: 'borrow, UD: ThreadUserdata> TryFrom<Value<'borrow, 'thread, UD>> for Function<'borrow, 'thread, UD> {
+	type Error = ();
+
+	fn try_from(value: Value<'borrow, 'thread, UD>) -> Result<Self, Self::Error> {
+		if let StackValue::Function(_) = value.value() {
+			Ok(Self(value))
+		} else {
+			Err(())
+		}
+	}
+}
 
 impl<'borrow, 'thread: 'borrow, UD: ThreadUserdata> Deref for Function<'borrow, 'thread, UD> {
 	type Target = Value<'borrow, 'thread, UD>;

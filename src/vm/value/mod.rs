@@ -14,58 +14,21 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-use std::ffi::{c_void, CStr};
-use std::fmt::{Debug, Formatter};
+use std::ffi::CStr;
+use std::fmt::{Debug, Display, Formatter};
 use std::hint::unreachable_unchecked;
 use std::mem::MaybeUninit;
 use std::num::NonZeroU32;
 
-use luau_sys::luau::{Closure, lua_checkstack, lua_gettop, LUA_MULTRET, lua_pcall, lua_ref, lua_settop, lua_State, lua_Status, lua_Type_LUA_TBOOLEAN, lua_Type_LUA_TFUNCTION, lua_Type_LUA_TLIGHTUSERDATA, lua_Type_LUA_TNIL, lua_Type_LUA_TNUMBER, lua_Type_LUA_TSTRING, lua_Type_LUA_TTABLE, lua_Type_LUA_TTHREAD, lua_Type_LUA_TUSERDATA, lua_Type_LUA_TVECTOR, lua_unref, luaH_new, luaS_newlstr, StkId, Table, TString, TValue, Udata, Value as LValue};
+use luau_sys::luau::{lua_checkstack, lua_gettop, LUA_MULTRET, lua_pcall, lua_ref, lua_settop, lua_State, lua_Status, lua_unref, luaH_new, luaS_newlstr, StkId};
+pub use stack::StackValue;
 
 use crate::compiler::CompiledFunction;
 use crate::luau_sys::luau::luau_load;
 use crate::vm::{Error, Thread, ThreadUserdata};
 
 pub mod types;
-
-/// StackValue is the union of all values that can exist on the Luau stack. It
-/// is a replacement for the unsafe and error-prone FFI type TValue. This type
-/// is equivalent to an unmanaged pointer to a Luau value; the garbage collector
-/// **may free it at any point** unless it is put into a Value.
-///
-/// In many cases, this enum is only safe to use to refer to values that are
-/// currently on the stack, or to use to construct a Value - cases where the
-/// value is not at risk of garbage collection.
-#[derive(Copy, Clone, PartialEq, Debug)]
-pub enum StackValue {
-	Nil,
-	Boolean(bool),
-	LightUserdata(*mut c_void),
-	Number(f64),
-	Vector([f32; 3]),
-	String(*mut TString),
-	Table(*mut Table),
-	Function(*mut Closure),
-	Userdata(*mut Udata),
-	Thread(*mut lua_State)
-}
-
-impl StackValue {
-	/// Returns true if this value is garbage-collectible. For primitive value
-	/// types, such as `nil`, booleans, light userdatas, numbers, and vectors,
-	/// this is `false`, but for reference types such as strings, tables,
-	/// closures, full userdatas, and threads, this is `true`.
-	pub fn is_collectible(&self) -> bool {
-		match self {
-			Self::String(_) | Self::Table(_) | Self::Function(_) | Self::Userdata(_) | Self::Thread(_) => true,
-			_ => false
-		}
-	}
-
-	pub unsafe fn stack(state: *mut lua_State) -> Vec<Self> {
-		std::slice::from_raw_parts((*state).base, lua_gettop(state) as _).iter().copied().map(Self::from).collect()
-	}
-}
+mod stack;
 
 /// The Value struct represents a reference to a Luau value. If the value is
 /// garbage-collectible, Value guarantees it will not be collected until the
@@ -90,51 +53,18 @@ impl<'borrow, 'thread: 'borrow, UD: ThreadUserdata> Debug for Value<'borrow, 'th
 	fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
 		if let Some(ref ref_) = self.ref_ {
 			f.debug_struct("Value")
-				.field("value", &self.value)
+				.field("value", &format_args!("{}", self.value))
 				.field("ref", ref_)
 				.finish()
 		} else {
-			f.debug_tuple("Value").field(&self.value).finish()
+			f.debug_tuple("Value").field(&format_args!("{}", self.value)).finish()
 		}
 	}
 }
 
-impl Into<TValue> for StackValue {
-	fn into(self) -> TValue {
-		match self {
-			Self::Nil => TValue { value: LValue { b: 0 }, extra: 0, tt: lua_Type_LUA_TNIL as _ },
-			Self::Boolean(b) => TValue { value: LValue { b: b as _ }, extra: 0, tt: lua_Type_LUA_TBOOLEAN as _ },
-			Self::LightUserdata(ptr) => TValue { value: LValue { p: ptr }, extra: 0, tt: lua_Type_LUA_TLIGHTUSERDATA as _ },
-			Self::Number(n) => TValue { value: LValue { n }, extra: 0, tt: lua_Type_LUA_TNUMBER as _ },
-			Self::Vector([x, y, z]) => TValue {
-				value: LValue { v: [x, y] },
-				extra: unsafe { std::mem::transmute(z) },
-				tt: lua_Type_LUA_TVECTOR as _
-			},
-			Self::String(gc) => TValue { value: LValue { gc: gc as _ }, extra: 0, tt: lua_Type_LUA_TSTRING as _ },
-			Self::Table(gc) => TValue { value: LValue { gc: gc as _ }, extra: 0, tt: lua_Type_LUA_TTABLE as _ },
-			Self::Function(gc) => TValue { value: LValue { gc: gc as _ }, extra: 0, tt: lua_Type_LUA_TFUNCTION as _ },
-			Self::Userdata(gc) => TValue { value: LValue { gc: gc as _ }, extra: 0, tt: lua_Type_LUA_TUSERDATA as _ },
-			Self::Thread(gc) => TValue { value: LValue { gc: gc as _ }, extra: 0, tt: lua_Type_LUA_TTHREAD as _ }
-		}
-	}
-}
-
-impl From<TValue> for StackValue {
-	fn from(value: TValue) -> Self {
-		match value.tt as _ {
-			luau_sys::luau::lua_Type_LUA_TNIL => StackValue::Nil,
-			luau_sys::luau::lua_Type_LUA_TBOOLEAN => StackValue::Boolean(unsafe { value.value.b } != 0),
-			luau_sys::luau::lua_Type_LUA_TLIGHTUSERDATA => StackValue::LightUserdata(unsafe { value.value.p }),
-			luau_sys::luau::lua_Type_LUA_TNUMBER => StackValue::Number(unsafe { value.value.n }),
-			luau_sys::luau::lua_Type_LUA_TVECTOR => StackValue::Vector(unsafe { [value.value.v[0], value.value.v[1], std::mem::transmute(value.extra)] }),
-			luau_sys::luau::lua_Type_LUA_TSTRING => StackValue::String(unsafe { value.value.p as *mut TString }),
-			luau_sys::luau::lua_Type_LUA_TTABLE => StackValue::Table(unsafe { value.value.p as *mut Table }),
-			luau_sys::luau::lua_Type_LUA_TFUNCTION => StackValue::Function(unsafe { value.value.p as *mut Closure }),
-			luau_sys::luau::lua_Type_LUA_TUSERDATA => StackValue::Userdata(unsafe { value.value.p as *mut Udata }),
-			luau_sys::luau::lua_Type_LUA_TTHREAD => StackValue::Thread(unsafe { value.value.p as *mut lua_State }),
-			_ => unreachable!("other types of values cannot exist on the stack")
-		}
+impl<'borrow, 'thread: 'borrow, UD: ThreadUserdata> Display for Value<'borrow, 'thread, UD> {
+	fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+		Display::fmt(&self.value, f)
 	}
 }
 

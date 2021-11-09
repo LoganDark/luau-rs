@@ -15,6 +15,7 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 use std::cell::UnsafeCell;
+use std::convert::TryFrom;
 use std::ffi::CStr;
 use std::hint::unreachable_unchecked;
 
@@ -70,7 +71,7 @@ impl<'a, UD: ThreadUserdata> Thread<'a, UD> {
 	}
 
 	pub fn load_compiled<'b>(&'b self, compiled: CompiledFunction, chunkname: &CStr) -> Result<Function<'b, '_, UD>, Error> {
-		Ok(Function(Value::load_function(&self, compiled, chunkname)?))
+		Ok(Function::try_from(Value::load_function(&self, compiled, chunkname)?).unwrap())
 	}
 
 	pub fn load(&self, source: &str, chunkname: &CStr) -> Result<Function<UD>, LoadError> {
