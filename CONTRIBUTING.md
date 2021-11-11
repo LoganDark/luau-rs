@@ -19,6 +19,8 @@ Bugs include:
   Luau stack, from inside _or outside_ a native function
 - Being able to break import resolution, fastcall etc. without deoptimization
   (safeenv being disabled)
+- Any non-`unsafe` function in the entire library - regardless of whether it is
+  public or not - being able to cause UB
 
 ## Improvements
 
