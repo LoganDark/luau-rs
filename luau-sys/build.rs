@@ -66,18 +66,41 @@ fn main() {
 	println!("cargo:rustc-link-lib=stdc++");
 
 	// generate bindings to what we can
-	#[cfg(feature = "vm")]
-	bindgen::builder()
-		.clang_arg("-Iluau/VM/include")
-		.clang_arg("-std=c++17")
-		.header("vm.hpp")
-		.allowlist_var("LUA.*")
-		.allowlist_function("lua.*")
-		.allowlist_type("lua.*")
-		.generate()
-		.expect("couldn't generate Luau VM bindings")
-		.write_to_file(format!("{}/vm.rs", out_dir))
-		.expect("couldn't write Luau VM bindings to file");
+
+	#[cfg(any(feature = "ast", feature = "vm"))] {
+		let mut luau_bindgen = bindgen::builder()
+			.clang_arg("-Iluau/Ast/include")
+			.clang_arg("-Iluau/Compiler/include")
+			.clang_arg("-Iluau/Analysis/include")
+			.clang_arg("-Iluau/VM/include")
+			.clang_arg("-std=c++17")
+			.allowlist_var("LUA.*")
+			.allowlist_function("lua.*")
+			.allowlist_type("lua.*")
+			.allowlist_var("Luau::.*")
+			.blocklist_item("Luau::list")
+			.allowlist_function("Luau::.*")
+			.allowlist_type("Luau::.*")
+			.opaque_type("std::.*")
+			.opaque_type("Luau::DenseHash.*");
+
+		#[cfg(feature = "ast")] {
+			luau_bindgen = luau_bindgen.header("ast.hpp");
+		}
+
+		#[cfg(feature = "compiler")] {
+			luau_bindgen = luau_bindgen.header("compiler.hpp");
+		}
+
+		#[cfg(feature = "vm")] {
+			luau_bindgen = luau_bindgen.header("vm.hpp");
+		}
+
+		luau_bindgen.generate()
+			.expect("couldn't generate Luau bindings")
+			.write_to_file(format!("{}/luau.rs", out_dir))
+			.expect("couldn't write Luau bindings to file");
+	}
 
 	#[cfg(feature = "glue")] {
 		let mut glue_cc = cc::Build::new();

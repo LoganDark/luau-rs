@@ -13,13 +13,6 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-#![allow(non_camel_case_types, non_upper_case_globals, non_snake_case, improper_ctypes)]
-
-pub mod luau {
-	include!(concat!(env!("OUT_DIR"), "/luau.rs"));
-}
-
-#[cfg(any(feature = "glue"))]
-pub mod glue {
-	include!(concat!(env!("OUT_DIR"), "/glue.rs"));
-}
+#include "Luau/Compiler.h"
+#include "Luau/Bytecode.h"
+#include "Luau/BytecodeBuilder.h"

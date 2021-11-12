@@ -13,13 +13,14 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-#![allow(non_camel_case_types, non_upper_case_globals, non_snake_case, improper_ctypes)]
+#include "Luau/Location.h"
+#include "Luau/Ast.h"
+#include "Luau/Lexer.h"
+#include "Luau/ParseOptions.h"
+#include "Luau/StringUtils.h"
+#include "Luau/DenseHash.h"
+#include "Luau/Common.h"
+#include "Luau/Parser.h"
 
-pub mod luau {
-	include!(concat!(env!("OUT_DIR"), "/luau.rs"));
-}
-
-#[cfg(any(feature = "glue"))]
-pub mod glue {
-	include!(concat!(env!("OUT_DIR"), "/glue.rs"));
-}
+#include "Luau/Confusables.h"
+#include "Luau/TimeTrace.h"
