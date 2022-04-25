@@ -22,12 +22,12 @@
 
 Luau::CompileOptions gluaC_compopt2luau(const gluau_CompileOpts &opts) {
 	return {
-		.bytecodeVersion = opts.bytecodeVersion,
 		.optimizationLevel = opts.optimizationLevel,
 		.debugLevel = opts.debugLevel,
 		.coverageLevel = opts.coverageLevel,
 		.vectorLib = opts.vectorLib,
-		.vectorCtor = opts.vectorCtor
+		.vectorCtor = opts.vectorCtor,
+		.mutableGlobals = opts.mutableGlobals
 	};
 }
 

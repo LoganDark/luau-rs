@@ -58,12 +58,12 @@ struct gluau_CompileResult {
 };
 
 struct gluau_CompileOpts {
-	int bytecodeVersion;
 	int optimizationLevel;
 	int debugLevel;
 	int coverageLevel;
 	const char* vectorLib;
 	const char* vectorCtor;
+	const char** mutableGlobals;
 };
 
 struct gluau_ParseOpts {

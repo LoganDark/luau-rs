@@ -55,22 +55,17 @@ pub struct CompileOptions(luau_sys::glue::gluau_CompileOpts);
 impl Default for CompileOptions {
 	fn default() -> Self {
 		Self(luau_sys::glue::gluau_CompileOpts {
-			bytecodeVersion: 1,
 			optimizationLevel: 1,
 			debugLevel: 1,
 			coverageLevel: 0,
 			vectorLib: std::ptr::null(),
-			vectorCtor: std::ptr::null()
+			vectorCtor: std::ptr::null(),
+			mutableGlobals: std::ptr::null_mut()
 		})
 	}
 }
 
 impl CompileOptions {
-	pub fn set_bytecode_version(&mut self, version: NonZeroU32) -> &mut Self {
-		self.0.bytecodeVersion = version.get() as _;
-		self
-	}
-
 	pub fn set_opt_level(&mut self, level: OptimizationLevel) -> &mut Self {
 		self.0.optimizationLevel = match level {
 			OptimizationLevel::None => 0,
@@ -107,10 +102,6 @@ impl CompileOptions {
 		new.set_debug_level(debug_level);
 		new.set_coverage_level(coverage_level);
 		new
-	}
-
-	pub fn bytecode_version(&self) -> u32 {
-		self.0.bytecodeVersion as u32
 	}
 
 	pub fn opt_level(&self) -> OptimizationLevel {

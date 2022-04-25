@@ -84,20 +84,20 @@ impl StackValue {
 impl Into<TValue> for StackValue {
 	fn into(self) -> TValue {
 		match self {
-			Self::Nil => TValue { value: LValue { b: 0 }, extra: 0, tt: lua_Type_LUA_TNIL as _ },
-			Self::Boolean(b) => TValue { value: LValue { b: b as _ }, extra: 0, tt: lua_Type_LUA_TBOOLEAN as _ },
-			Self::LightUserdata(ptr) => TValue { value: LValue { p: ptr }, extra: 0, tt: lua_Type_LUA_TLIGHTUSERDATA as _ },
-			Self::Number(n) => TValue { value: LValue { n }, extra: 0, tt: lua_Type_LUA_TNUMBER as _ },
+			Self::Nil => TValue { value: LValue { b: 0 }, extra: [0], tt: lua_Type_LUA_TNIL as _ },
+			Self::Boolean(b) => TValue { value: LValue { b: b as _ }, extra: [0], tt: lua_Type_LUA_TBOOLEAN as _ },
+			Self::LightUserdata(ptr) => TValue { value: LValue { p: ptr }, extra: [0], tt: lua_Type_LUA_TLIGHTUSERDATA as _ },
+			Self::Number(n) => TValue { value: LValue { n }, extra: [0], tt: lua_Type_LUA_TNUMBER as _ },
 			Self::Vector([x, y, z]) => TValue {
 				value: LValue { v: [x, y] },
-				extra: unsafe { std::mem::transmute(z) },
+				extra: [unsafe { std::mem::transmute(z) }],
 				tt: lua_Type_LUA_TVECTOR as _
 			},
-			Self::String(gc) => TValue { value: LValue { gc: gc as _ }, extra: 0, tt: lua_Type_LUA_TSTRING as _ },
-			Self::Table(gc) => TValue { value: LValue { gc: gc as _ }, extra: 0, tt: lua_Type_LUA_TTABLE as _ },
-			Self::Function(gc) => TValue { value: LValue { gc: gc as _ }, extra: 0, tt: lua_Type_LUA_TFUNCTION as _ },
-			Self::Userdata(gc) => TValue { value: LValue { gc: gc as _ }, extra: 0, tt: lua_Type_LUA_TUSERDATA as _ },
-			Self::Thread(gc) => TValue { value: LValue { gc: gc as _ }, extra: 0, tt: lua_Type_LUA_TTHREAD as _ }
+			Self::String(gc) => TValue { value: LValue { gc: gc as _ }, extra: [0], tt: lua_Type_LUA_TSTRING as _ },
+			Self::Table(gc) => TValue { value: LValue { gc: gc as _ }, extra: [0], tt: lua_Type_LUA_TTABLE as _ },
+			Self::Function(gc) => TValue { value: LValue { gc: gc as _ }, extra: [0], tt: lua_Type_LUA_TFUNCTION as _ },
+			Self::Userdata(gc) => TValue { value: LValue { gc: gc as _ }, extra: [0], tt: lua_Type_LUA_TUSERDATA as _ },
+			Self::Thread(gc) => TValue { value: LValue { gc: gc as _ }, extra: [0], tt: lua_Type_LUA_TTHREAD as _ }
 		}
 	}
 }
