@@ -1,7 +1,3 @@
-> **NOTICE:** This project is temporary on hold until I can wrap up my current
-> project (which I am being paid for). Rest assured that `luau` will return
-> sometime in Q1 2022!
-
 # luau - Rust bindings to Roblox's Luau
 
 This library is an interface between Rust and Luau. It aims to be easy-to-use,
