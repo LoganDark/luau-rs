@@ -13,27 +13,27 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-use std::cell::UnsafeCell;
-use std::convert::TryFrom;
-use std::ffi::CStr;
-use std::hint::unreachable_unchecked;
+use std::marker::PhantomData;
+use std::pin::Pin;
+use std::ptr::NonNull;
 
-use luau_sys::luau::lua_State;
+use crate::compiler::CompileError;
+use crate::vm::{Error, Luau, RawThread};
 
-use crate::compiler::{compile, CompiledFunction, CompileError};
-use crate::vm::{Error, Luau, Value};
-use crate::vm::global::ptr_to_ref;
-use crate::vm::types::Function;
+pub type UserdataContainer<T> = Pin<Box<T>>;
 
-pub trait ThreadUserdata {}
+pub trait ThreadUserdata: Sized {
+	fn derive(parent: Thread<Self>) -> UserdataContainer<Self>;
+}
 
-impl ThreadUserdata for () {}
+impl ThreadUserdata for () {
+	fn derive(_parent: Thread<Self>) -> UserdataContainer<Self> { Box::pin(()) }
+}
 
 #[derive(Clone, Debug)]
 pub struct Thread<'a, UD: ThreadUserdata> {
-	vm: &'a Luau<UD>,
-	state: &'a UnsafeCell<lua_State>,
-	userdata: &'a UnsafeCell<UD>
+	raw: NonNull<RawThread>,
+	phantom: PhantomData<&'a Luau<UD>>
 }
 
 #[derive(Clone, Eq, PartialEq, Debug, thiserror::Error)]
@@ -46,35 +46,7 @@ pub enum LoadError {
 }
 
 impl<'a, UD: ThreadUserdata> Thread<'a, UD> {
-	pub unsafe fn new(vm: &'a Luau<UD>, state: &'a UnsafeCell<lua_State>) -> Self {
-		let userdata = match ptr_to_ref((*state.get()).userdata as *mut UD) {
-			Some(ud) => ud,
-			// SAFETY: Luau guarantees that all created threads will have fully
-			// initialized and valid userdata.
-			None => unreachable_unchecked()
-		};
-
-		Self { vm, state, userdata }
-	}
-
-	pub fn vm(&self) -> &'a Luau<UD> {
-		self.vm
-	}
-
-	pub fn as_ptr(&self) -> *mut lua_State {
-		self.state.get()
-	}
-
-	pub fn userdata_ptr(&self) -> *mut UD {
-		self.userdata.get()
-	}
-
-	pub fn load_compiled<'b>(&'b self, compiled: CompiledFunction, chunkname: &CStr) -> Result<Function<'b, '_, UD>, Error> {
-		Ok(Function::try_from(Value::load_function(&self, compiled, chunkname)?).unwrap())
-	}
-
-	pub fn load(&self, source: &str, chunkname: &CStr) -> Result<Function<UD>, LoadError> {
-		let compiled = compile(source, &Default::default(), &Default::default())?;
-		Ok(self.load_compiled(compiled, chunkname)?)
+	pub unsafe fn from_raw(raw: NonNull<RawThread>) -> Self {
+		Self { raw, phantom: PhantomData }
 	}
 }

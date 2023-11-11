@@ -9,10 +9,13 @@
   <component name="ChangeListManager">
     <list default="true" id="f6478834-ca64-42a5-9177-17867eba13c5" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/luau-sys/vm.hpp" beforeDir="false" afterPath="$PROJECT_DIR$/luau-sys/vm.hpp" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/vm/value/mod.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/vm/value/mod.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/vm/value/stack.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/vm/value/stack.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/vm/value/types/mod.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/vm/value/types/mod.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Cargo.toml" beforeDir="false" afterPath="$PROJECT_DIR$/Cargo.toml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/vm/global.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/vm/global.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/vm/mod.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/vm/mod.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/vm/thread.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/vm/thread.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/vm/value/mod.rs" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/vm/value/stack.rs" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/vm/value/types/mod.rs" beforeDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
