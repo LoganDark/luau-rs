@@ -81,6 +81,7 @@ value_wrapper!(Table, StackValue::Table(_));
 value_wrapper!(Function, StackValue::Function(_));
 value_wrapper!(Userdata<T: UserdataTarget: &'borrow UnsafeCell<T>>, StackValue::Userdata(_));
 value_wrapper!(Thread: UD, StackValue::Thread(_));
+value_wrapper!(Buffer, StackValue::Buffer(_));
 
 macro_rules! wrapper_constructor {
 	($name:ident : $udataname: ident, $thread:ident $(,$($arg:ident : $ty:ty),*)? ; $body:block) => {
@@ -117,3 +118,4 @@ wrapper_constructor!(String => new_string(value: &BStr));
 wrapper_constructor!(Table => new_table(narray: u32, nhash: u32));
 // TODO function, userdata
 wrapper_constructor!(Thread: UD => new_thread(userdata: Pin<Box<UD>>));
+wrapper_constructor!(Buffer => new_buffer(s: usize));

@@ -19,6 +19,8 @@ use std::os::raw::c_char;
 
 use bstr::BStr;
 
+use luau_sys::luau::{Buffer, lua_Type_LUA_TBUFFER};
+
 use crate::luau_sys::luau::{Closure, lua_gettop, lua_State, lua_Type_LUA_TBOOLEAN, lua_Type_LUA_TFUNCTION, lua_Type_LUA_TLIGHTUSERDATA, lua_Type_LUA_TNIL, lua_Type_LUA_TNUMBER, lua_Type_LUA_TSTRING, lua_Type_LUA_TTABLE, lua_Type_LUA_TTHREAD, lua_Type_LUA_TUSERDATA, lua_Type_LUA_TVECTOR, Table, TString, TValue, Udata, Value as LValue};
 
 /// StackValue is the union of all values that can exist on the Luau stack. It
@@ -40,7 +42,8 @@ pub enum StackValue {
 	Table(*mut Table),
 	Function(*mut Closure),
 	Userdata(*mut Udata),
-	Thread(*mut lua_State)
+	Thread(*mut lua_State),
+	Buffer(*mut Buffer)
 }
 
 impl Display for StackValue {
@@ -58,7 +61,8 @@ impl Display for StackValue {
 			StackValue::Table(ptr) => f.debug_tuple("Table").field(ptr).finish(),
 			StackValue::Function(ptr) => f.debug_tuple("Function").field(ptr).finish(),
 			StackValue::Userdata(ptr) => f.debug_tuple("Userdata").field(ptr).finish(),
-			StackValue::Thread(ptr) => f.debug_tuple("Thread").field(ptr).finish()
+			StackValue::Thread(ptr) => f.debug_tuple("Thread").field(ptr).finish(),
+			StackValue::Buffer(ptr) => f.debug_tuple("Buffer").field(ptr).finish()
 		}
 	}
 }
@@ -96,7 +100,8 @@ impl Into<TValue> for StackValue {
 			Self::Table(gc) => TValue { value: LValue { gc: gc as _ }, extra: [0], tt: lua_Type_LUA_TTABLE as _ },
 			Self::Function(gc) => TValue { value: LValue { gc: gc as _ }, extra: [0], tt: lua_Type_LUA_TFUNCTION as _ },
 			Self::Userdata(gc) => TValue { value: LValue { gc: gc as _ }, extra: [0], tt: lua_Type_LUA_TUSERDATA as _ },
-			Self::Thread(gc) => TValue { value: LValue { gc: gc as _ }, extra: [0], tt: lua_Type_LUA_TTHREAD as _ }
+			Self::Thread(gc) => TValue { value: LValue { gc: gc as _ }, extra: [0], tt: lua_Type_LUA_TTHREAD as _ },
+			Self::Buffer(gc) => TValue { value: LValue { gc: gc as _ }, extra: [0], tt: lua_Type_LUA_TBUFFER as _ }
 		}
 	}
 }
@@ -114,6 +119,7 @@ impl From<TValue> for StackValue {
 			luau_sys::luau::lua_Type_LUA_TFUNCTION => StackValue::Function(unsafe { value.value.p as *mut Closure }),
 			luau_sys::luau::lua_Type_LUA_TUSERDATA => StackValue::Userdata(unsafe { value.value.p as *mut Udata }),
 			luau_sys::luau::lua_Type_LUA_TTHREAD => StackValue::Thread(unsafe { value.value.p as *mut lua_State }),
+			luau_sys::luau::lua_Type_LUA_TBUFFER => StackValue::Buffer(unsafe { value.value.p as *mut Buffer }),
 			_ => unreachable!("other types of values cannot exist on the stack")
 		}
 	}

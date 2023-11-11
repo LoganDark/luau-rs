@@ -20,7 +20,7 @@ use std::mem::MaybeUninit;
 use std::num::NonZeroU32;
 use std::pin::Pin;
 
-use luau_sys::luau::{lua_checkstack, lua_gettop, LUA_MULTRET, lua_pcall, lua_ref, lua_settop, lua_State, lua_Status, lua_unref, luaH_new, luaS_newlstr, StkId};
+use luau_sys::luau::{lua_checkstack, lua_gettop, LUA_MULTRET, lua_pcall, lua_ref, lua_settop, lua_State, lua_Status, lua_unref, luaB_newbuffer, luaH_new, luaS_newlstr, StkId};
 pub use stack::StackValue;
 
 use crate::compiler::CompiledFunction;
@@ -143,6 +143,13 @@ impl<'borrow, 'thread: 'borrow, UD: ThreadUserdata + 'thread> Value<'borrow, 'th
 		unsafe {
 			let table = luaH_new(thread.as_ptr(), narray as _, lnhash as _);
 			Self::new(thread, StackValue::Table(table))
+		}
+	}
+
+	pub fn new_buffer(thread: &'borrow Thread<'thread, UD>, s: usize) -> Result<Self, ()> {
+		unsafe {
+			let buffer = luaB_newbuffer(thread.as_ptr(), s as _);
+			Self::new(thread, StackValue::Buffer(buffer))
 		}
 	}
 

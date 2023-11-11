@@ -34,5 +34,6 @@
 #include "luau/VM/src/lstate.h"
 #include "luau/VM/src/lstring.h"
 #include "luau/VM/src/ltable.h"
+#include "luau/VM/src/lbuffer.h"
 #include "luau/VM/src/ltm.h"
 #include "luau/VM/src/lvm.h"
