@@ -8,23 +8,11 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="f6478834-ca64-42a5-9177-17867eba13c5" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/.idea/.gitignore" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/.name" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/codeStyles/Project.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/codeStyles/Project.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/codeStyles/codeStyleConfig.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/codeStyles/codeStyleConfig.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/encodings.xml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/fileTemplates/internal/Rust File.rs" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/inspectionProfiles/Project_Default.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/inspectionProfiles/Project_Default.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/luau-sys.iml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/modules.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/modules.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/vcs.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/vcs.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/luau-sys/build.rs" beforeDir="false" afterPath="$PROJECT_DIR$/luau-sys/build.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/luau-sys/src/glue/common.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/luau-sys/src/glue/common.cpp" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/luau-sys/src/glue/compiler.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/luau-sys/src/glue/compiler.cpp" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/luau-sys/src/glue/compiler.h" beforeDir="false" afterPath="$PROJECT_DIR$/luau-sys/src/glue/compiler.h" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/ast/mod.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/ast/mod.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/compiler/mod.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/compiler/mod.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/luau-sys/vm.hpp" beforeDir="false" afterPath="$PROJECT_DIR$/luau-sys/vm.hpp" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/vm/value/mod.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/vm/value/mod.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/vm/value/stack.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/vm/value/stack.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/vm/value/types/mod.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/vm/value/types/mod.rs" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -54,6 +42,7 @@
   </component>
   <component name="PropertiesComponent"><![CDATA[{
   "keyToString": {
+    "Cargo.Run basic_run.executor": "Run",
     "Cargo.Run compile.executor": "Run",
     "RunOnceActivity.OpenProjectViewOnStart": "true",
     "RunOnceActivity.ShowReadmeOnStart": "true",
@@ -69,7 +58,24 @@
     "vue.rearranger.settings.migration": "true"
   }
 }]]></component>
-  <component name="RunManager" selected="Cargo.Run compile">
+  <component name="RunManager" selected="Cargo.Run basic_run">
+    <configuration name="Run basic_run" type="CargoCommandRunConfiguration" factoryName="Cargo Command" temporary="true">
+      <option name="command" value="run --package luau --example basic_run" />
+      <option name="workingDirectory" value="file://$PROJECT_DIR$" />
+      <option name="emulateTerminal" value="true" />
+      <option name="channel" value="DEFAULT" />
+      <option name="requiredFeatures" value="true" />
+      <option name="allFeatures" value="false" />
+      <option name="withSudo" value="false" />
+      <option name="buildTarget" value="REMOTE" />
+      <option name="backtrace" value="SHORT" />
+      <envs />
+      <option name="isRedirectInput" value="false" />
+      <option name="redirectInputPath" value="" />
+      <method v="2">
+        <option name="CARGO.BUILD_TASK_PROVIDER" enabled="true" />
+      </method>
+    </configuration>
     <configuration name="Run compile" type="CargoCommandRunConfiguration" factoryName="Cargo Command" temporary="true">
       <option name="command" value="run --package luau --example compile" />
       <option name="workingDirectory" value="file://$PROJECT_DIR$" />
@@ -106,6 +112,7 @@
     </configuration>
     <recent_temporary>
       <list>
+        <item itemvalue="Cargo.Run basic_run" />
         <item itemvalue="Cargo.Run compile" />
       </list>
     </recent_temporary>
