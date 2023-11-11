@@ -38,7 +38,7 @@ gluau_Buffer gluauU_strtobuf(const std::string &input) {
 #define FOR_EACH_FFLAG(T, v) for (Luau::FValue<T>* v = Luau::FValue<T>::list; v; v = v->next) // NOLINT(bugprone-macro-parentheses)
 
 template<typename T>
-	__always_inline Luau::FValue<T>** gluau_get_fvalues() {
+	Luau::FValue<T>** gluau_get_fvalues() {
 		size_t num = 0;
 		// @formatter:off
 		FOR_EACH_FFLAG(T, flag) num++;
@@ -56,7 +56,7 @@ template<typename T>
 	}
 
 template<typename T>
-	__always_inline Luau::FValue<T>* gluau_find_fvalue(struct gluau_Buffer name) {
+	Luau::FValue<T>* gluau_find_fvalue(struct gluau_Buffer name) {
 		FOR_EACH_FFLAG(T, flag) {
 			if (strlen(flag->name) == name.len && memcmp(flag->name, name.data, name.len) == 0) {
 				return flag;
@@ -67,7 +67,7 @@ template<typename T>
 	}
 
 template<typename T>
-	__always_inline gluau_Buffer gluau_fvalue_name(void* fvalue) {
+	gluau_Buffer gluau_fvalue_name(void* fvalue) {
 		auto flag = static_cast<Luau::FValue<T>*>(fvalue);
 
 		return {
@@ -77,12 +77,12 @@ template<typename T>
 	}
 
 template<typename T>
-	__always_inline T gluau_fvalue_get(void* fvalue) {
+	T gluau_fvalue_get(void* fvalue) {
 		return static_cast<Luau::FValue<T>*>(fvalue)->value;
 	}
 
 template<typename T>
-	__always_inline void gluau_fvalue_set(void* fvalue, T value) {
+	void gluau_fvalue_set(void* fvalue, T value) {
 		static_cast<Luau::FValue<T>*>(fvalue)->value = value;
 	}
 

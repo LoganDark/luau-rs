@@ -25,13 +25,15 @@ fn main() {
 
 			config.define("LUAU_BUILD_CLI", "OFF")
 				.define("LUAU_BUILD_TESTS", "OFF")
+				.define("LUAU_STATIC_CRT", "ON")
+				.profile("Release")
 				.no_build_target(true);
 
 			// Windows is special, and needs to have an extra flag defined
 			// This is due to cmake-rs wiping them for no reason
 			// Luau needs unwinding in order for exceptions to work (obviously)
 			#[cfg(target_os = "windows")]
-				config.cxxflag("/EHsc");
+			config.cxxflag("/EHsc");
 
 			config.build()
 		};
@@ -69,6 +71,7 @@ fn main() {
 
 	#[cfg(any(feature = "ast", feature = "vm"))] {
 		let mut luau_bindgen = bindgen::builder()
+			.clang_arg("-Iluau/Common/include")
 			.clang_arg("-Iluau/Ast/include")
 			.clang_arg("-Iluau/Compiler/include")
 			.clang_arg("-Iluau/Analysis/include")
@@ -106,6 +109,7 @@ fn main() {
 		let mut glue_cc = cc::Build::new();
 
 		glue_cc
+			.flag("-Iluau/Common/include")
 			.flag("-Iluau/Ast/include")
 			.flag("-Iluau/Compiler/include")
 			.flag("-Iluau/Analysis/include")
@@ -113,10 +117,12 @@ fn main() {
 			// MSVC requires /std:c++latest for designated initializers
 			// I quite like them so I'm not going to stop using them
 			// Windows being special for the fourth time
-			.flag(if cfg!(target_os = "windows") { "/std:c++latest" } else { "-std=c++17" });
+			.flag(if cfg!(target_os = "windows") { "/std:c++latest" } else { "-std=c++17" })
+			.static_crt(true);
 
 		let mut glue_bindgen = bindgen::builder()
 			.clang_args([
+				"-Iluau/Common/include",
 				"-Iluau/Ast/include",
 				"-Iluau/Compiler/include",
 				"-Iluau/Analysis/include",

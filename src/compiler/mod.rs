@@ -14,7 +14,6 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 use std::fmt::{Display, Formatter};
-use std::num::NonZeroU32;
 
 use crate::ast::{ParseOptions, Span};
 

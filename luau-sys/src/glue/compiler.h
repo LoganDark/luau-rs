@@ -67,8 +67,6 @@ struct gluau_CompileOpts {
 };
 
 struct gluau_ParseOpts {
-	bool allowTypeAnnotations;
-	bool supportContinueStatement;
 	bool allowDeclarationSyntax;
 	bool captureComments;
 };

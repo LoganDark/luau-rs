@@ -33,8 +33,6 @@ Luau::CompileOptions gluaC_compopt2luau(const gluau_CompileOpts &opts) {
 
 Luau::ParseOptions gluaC_parseopt2luau(const gluau_ParseOpts &opts) {
 	return {
-		.allowTypeAnnotations = opts.allowTypeAnnotations,
-		.supportContinueStatement = opts.supportContinueStatement,
 		.allowDeclarationSyntax = opts.allowDeclarationSyntax,
 		.captureComments = opts.captureComments
 	};

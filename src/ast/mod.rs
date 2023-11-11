@@ -35,8 +35,6 @@ pub struct ParseOptions(pub(crate) gluau_ParseOpts);
 impl Default for ParseOptions {
 	fn default() -> Self {
 		Self(gluau_ParseOpts {
-			allowTypeAnnotations: true,
-			supportContinueStatement: true,
 			allowDeclarationSyntax: false,
 			captureComments: false
 		})
@@ -44,18 +42,6 @@ impl Default for ParseOptions {
 }
 
 impl ParseOptions {
-	/// Sets whether type annotations are allowed.
-	pub fn set_allow_type_annotations(&mut self, value: bool) -> &mut Self {
-		self.0.allowTypeAnnotations = value;
-		self
-	}
-
-	/// Sets whether to support the `continue` statement in loops.
-	pub fn set_support_continue_statement(&mut self, value: bool) -> &mut Self {
-		self.0.supportContinueStatement = value;
-		self
-	}
-
 	/// Sets whether to enable a new `declare` keyword to declare the existence
 	/// of a global function or variable. This hasn't yet been announced.
 	pub fn set_allow_declaration_syntax(&mut self, value: bool) -> &mut Self {
@@ -68,14 +54,6 @@ impl ParseOptions {
 	pub fn set_capture_comments(&mut self, value: bool) -> &mut Self {
 		self.0.captureComments = value;
 		self
-	}
-
-	pub fn allow_type_annotations(&self) -> bool {
-		self.0.allowTypeAnnotations
-	}
-
-	pub fn support_continue_statement(&self) -> bool {
-		self.0.supportContinueStatement
 	}
 
 	pub fn allow_declaration_syntax(&self) -> bool {
