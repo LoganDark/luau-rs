@@ -35,4 +35,5 @@ impl DerefMut for RawClosure {
 impl RawClosure {
 	pub fn from(ptr: *mut Closure) -> Option<NonNull<Self>> { NonNull::new(ptr).map(NonNull::cast) }
 	pub unsafe fn from_unchecked(ptr: *mut Closure) -> NonNull<Self> { NonNull::new_unchecked(ptr).cast() }
+	pub fn ptr(&self) -> *mut Closure { self.0.get() }
 }

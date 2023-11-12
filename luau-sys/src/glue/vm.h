@@ -22,3 +22,4 @@
 #include <lobject.h> // Table
 
 GLUE_API enum lua_Status gluauH_new(struct lua_State* L, int narray, int lnhash, struct Table* &result);
+GLUE_API enum lua_Status gluau_ref(struct lua_State* L, int idx, int &result);

@@ -9,20 +9,30 @@
   <component name="ChangeListManager">
     <list default="true" id="f6478834-ca64-42a5-9177-17867eba13c5" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/luau-sys/Cargo.toml" beforeDir="false" afterPath="$PROJECT_DIR$/luau-sys/Cargo.toml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/luau-sys/build.rs" beforeDir="false" afterPath="$PROJECT_DIR$/luau-sys/build.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/luau-sys/src/glue/common.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/luau-sys/src/glue/common.cpp" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/luau-sys/src/glue/common.h" beforeDir="false" afterPath="$PROJECT_DIR$/luau-sys/src/glue/common.h" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/luau-sys/src/glue/vm.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/luau-sys/src/glue/vm.cpp" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/luau-sys/src/glue/vm.h" beforeDir="false" afterPath="$PROJECT_DIR$/luau-sys/src/glue/vm.h" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/luau-sys/src/lib.rs" beforeDir="false" afterPath="$PROJECT_DIR$/luau-sys/src/lib.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/compiler/mod.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/compiler/mod.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/fvalue.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/fvalue.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/vm/error.rs" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/vm/global.rs" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/src/vm/mod.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/vm/mod.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/vm/raw.rs" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/vm/thread.rs" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/vm/raw/buffer.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/vm/raw/buffer.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/vm/raw/closure.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/vm/raw/closure.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/vm/raw/mod.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/vm/raw/mod.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/vm/raw/string.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/vm/raw/string.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/vm/raw/table.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/vm/raw/table.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/vm/raw/thread.rs" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/vm/raw/userdata.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/vm/raw/userdata.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/vm/value/boolean.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/vm/value/boolean.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/vm/value/buffer.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/vm/value/buffer.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/vm/value/closure.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/vm/value/closure.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/vm/value/dynamic.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/vm/value/dynamic.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/vm/value/lightuserdata.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/vm/value/lightuserdata.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/vm/value/mod.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/vm/value/mod.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/vm/value/nil.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/vm/value/nil.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/vm/value/number.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/vm/value/number.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/vm/value/string.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/vm/value/string.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/vm/value/table.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/vm/value/table.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/vm/value/thread.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/vm/value/thread.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/vm/value/userdata.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/vm/value/userdata.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/vm/value/vector.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/vm/value/vector.rs" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />

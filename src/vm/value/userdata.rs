@@ -15,24 +15,24 @@
 
 use std::ptr::NonNull;
 
-use luau_sys::luau::{lua_Type, TValue, Value};
-
 use crate::vm::raw::userdata::RawUserdata;
-use crate::vm::value::AsTValue;
+use crate::vm::raw::value::RawValue;
+use crate::vm::value::gc::{Datatype, LuauRef};
+use crate::vm::value::thread::Thread;
 
 #[derive(Clone, Debug)]
-pub struct Userdata(NonNull<RawUserdata>);
+#[repr(transparent)]
+pub struct Userdata<'a>(&'a RawUserdata);
 
-unsafe impl AsTValue for Userdata {
-	fn as_tvalue(&self) -> TValue {
-		TValue {
-			value: Value { gc: self.0.as_ptr().cast() },
-			extra: Default::default(),
-			tt: lua_Type::LUA_TUSERDATA as _,
-		}
+impl<'a> Datatype<'a> for Userdata<'a> {
+	type Ref = LuauRef<'a>;
+
+	fn acquire_ref(&self, thread: Thread<'a>) -> Option<Self::Ref> {
+		unsafe { LuauRef::new(thread.raw(), RawValue::new_userdata(NonNull::from(self.0))) }
 	}
 }
 
-impl Userdata {
-	pub unsafe fn from_raw(raw: NonNull<RawUserdata>) -> Self { Self(raw) }
+impl<'a> Userdata<'a> {
+	pub unsafe fn from_raw(raw: &'a RawUserdata) -> Self { Self(raw) }
+	pub fn raw(&self) -> &'a RawUserdata { self.0 }
 }

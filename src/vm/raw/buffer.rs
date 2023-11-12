@@ -35,4 +35,5 @@ impl DerefMut for RawBuffer {
 impl RawBuffer {
 	pub fn from(ptr: *mut Buffer) -> Option<NonNull<Self>> { NonNull::new(ptr).map(NonNull::cast) }
 	pub unsafe fn from_unchecked(ptr: *mut Buffer) -> NonNull<Self> { NonNull::new_unchecked(ptr).cast() }
+	pub fn ptr(&self) -> *mut Buffer { self.0.get() }
 }

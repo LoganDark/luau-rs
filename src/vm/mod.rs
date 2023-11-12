@@ -14,9 +14,9 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 use std::marker::PhantomData;
-use std::pin::Pin;
 use std::ptr::NonNull;
 
+use data::{Data, GlobalData, ThreadData};
 use luau_sys::luau::lua_State;
 use value::thread::Thread;
 
@@ -24,66 +24,36 @@ use crate::compiler::{compile, compile_sneakily, CompiledFunction, CompileError}
 use crate::vm::raw::RawGlobal;
 use crate::vm::raw::thread::RawThread;
 
+pub mod error;
 pub mod raw;
 pub mod value;
-
-pub type Data<T> = Pin<Box<T>>;
-
-#[derive(Debug, Default)]
-pub enum Response {
-	#[default]
-	None,
-	Yield
-}
-
-#[allow(unused_variables)]
-pub trait GlobalData: Sized {
-	type ThreadData: ThreadData;
-
-	fn interrupt(thread: Thread<Self::ThreadData>) -> Response { Response::None }
-	fn debug_break(thread: Thread<Self::ThreadData>) -> Response { Response::None }
-	fn debug_step(thread: Thread<Self::ThreadData>) -> Response { Response::None }
-	fn debug_interrupt(thread: Thread<Self::ThreadData>) -> Response { Response::None }
-	fn debug_protectederror(thread: Thread<Self::ThreadData>) -> Response { Response::None }
-}
-
-pub trait ThreadData: Sized {
-	fn derive(parent: Thread<Self>) -> Data<Self>;
-}
-
-impl GlobalData for () {
-	type ThreadData = ();
-}
-
-impl ThreadData for () {
-	fn derive(_parent: Thread<Self>) -> Data<Self> { Box::pin(()) }
-}
+pub mod data;
 
 #[derive(Debug)]
-pub struct Luau<GD: GlobalData> {
+pub struct Luau<D: GlobalData> {
 	global: NonNull<RawGlobal>,
-	phantom: PhantomData<NonNull<GD>>
+	phantom: PhantomData<NonNull<D>>
 }
 
-unsafe impl<GD: GlobalData> Send for Luau<GD> {}
+unsafe impl<D: GlobalData> Send for Luau<D> {}
 
-impl<GD: GlobalData> Drop for Luau<GD> {
+impl<D: GlobalData> Drop for Luau<D> {
 	fn drop(&mut self) { unsafe { RawGlobal::close(self.global) } }
 }
 
-impl<GD: GlobalData> Luau<GD> {
-	pub fn with_data(global_data: Data<GD>, thread_data: Data<GD::ThreadData>) -> Option<Self> {
+impl<D: GlobalData> Luau<D> {
+	pub fn with_data(global_data: Data<D>, thread_data: Data<D::ThreadData>) -> Option<Self> {
 		unsafe {
 			let mut global = RawGlobal::new()?;
 			global.as_ref().set_userdata(global_data);
 			global.as_ref().main_thread().as_ref().set_userdata(thread_data);
-			global.as_mut().cb.userthread = Some(userthread::<GD::ThreadData>);
+			global.as_mut().cb.userthread = Some(userthread::<D::ThreadData>);
 
 			unsafe extern "C" fn userthread<TD: ThreadData>(parent: *mut lua_State, child: *mut lua_State) {
 				let (parent, child) = (RawThread::from(parent), RawThread::from_unchecked(child));
 
 				if let Some(parent) = parent {
-					let parent = Thread::from_raw(parent);
+					let parent = Thread::from_raw(parent.as_ref());
 					let userdata = TD::derive(parent);
 					child.as_ref().set_userdata(userdata);
 				} else {

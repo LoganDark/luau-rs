@@ -13,19 +13,13 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-use luau_sys::luau::{lua_Type, TValue, Value};
-
-use crate::vm::value::AsTValue;
+use crate::vm::value::gc::Datatype;
+use crate::vm::value::thread::Thread;
 
 #[derive(Copy, Clone, Eq, PartialEq, Debug, Default)]
 pub struct Nil;
 
-unsafe impl AsTValue for Nil {
-	fn as_tvalue(&self) -> TValue {
-		TValue {
-			value: Value { b: 0 },
-			extra: Default::default(),
-			tt: lua_Type::LUA_TNIL as _,
-		}
-	}
+impl<'a> Datatype<'a> for Nil {
+	type Ref = ();
+	fn acquire_ref(&self, _thread: Thread<'a>) -> Option<Self::Ref> { Some(()) }
 }

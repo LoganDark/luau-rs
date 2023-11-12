@@ -13,21 +13,16 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-use luau_sys::luau::{lua_Type, TValue, Value};
-
-use crate::vm::value::AsTValue;
+use crate::vm::value::gc::Datatype;
+use crate::vm::value::thread::Thread;
 
 #[derive(Copy, Clone, Eq, PartialEq, Debug)]
+#[repr(transparent)]
 pub struct LightUserdata(pub *mut ());
 
-unsafe impl AsTValue for LightUserdata {
-	fn as_tvalue(&self) -> TValue {
-		TValue {
-			value: Value { p: self.0.cast() },
-			extra: Default::default(),
-			tt: lua_Type::LUA_TLIGHTUSERDATA as _,
-		}
-	}
+impl<'a> Datatype<'a> for LightUserdata {
+	type Ref = ();
+	fn acquire_ref(&self, _thread: Thread<'a>) -> Option<Self::Ref> { Some(()) }
 }
 
 impl From<*mut ()> for LightUserdata {

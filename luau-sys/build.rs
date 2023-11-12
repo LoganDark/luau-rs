@@ -92,8 +92,7 @@ fn main() {
 			.allowlist_var("GCS.+|WHITE[01]BIT|BLACKBIT|FIXEDBIT|WHITEBITS")
 			.opaque_type("std::.*")
 			.opaque_type("Luau::DenseHash.*")
-			.default_enum_style(EnumVariation::Rust { non_exhaustive: false })
-			.fit_macro_constants(true);
+			.default_enum_style(EnumVariation::Rust { non_exhaustive: false });
 
 		#[cfg(feature = "ast")] {
 			luau_bindgen = luau_bindgen.header("ast.hpp");

@@ -35,4 +35,5 @@ impl DerefMut for RawString {
 impl RawString {
 	pub fn from(ptr: *mut TString) -> Option<NonNull<Self>> { NonNull::new(ptr).map(NonNull::cast) }
 	pub unsafe fn from_unchecked(ptr: *mut TString) -> NonNull<Self> { NonNull::new_unchecked(ptr).cast() }
+	pub fn ptr(&self) -> *mut TString { self.0.get() }
 }

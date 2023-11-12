@@ -15,24 +15,24 @@
 
 use std::ptr::NonNull;
 
-use luau_sys::luau::{lua_Type, TValue, Value};
-
 use crate::vm::raw::closure::RawClosure;
-use crate::vm::value::AsTValue;
+use crate::vm::raw::value::RawValue;
+use crate::vm::value::gc::{Datatype, LuauRef};
+use crate::vm::value::thread::Thread;
 
 #[derive(Clone, Debug)]
-pub struct Closure(NonNull<RawClosure>);
+#[repr(transparent)]
+pub struct Closure<'a>(&'a RawClosure);
 
-unsafe impl AsTValue for Closure {
-	fn as_tvalue(&self) -> TValue {
-		TValue {
-			value: Value { gc: self.0.as_ptr().cast() },
-			extra: Default::default(),
-			tt: lua_Type::LUA_TFUNCTION as _,
-		}
+impl<'a> Datatype<'a> for Closure<'a> {
+	type Ref = LuauRef<'a>;
+
+	fn acquire_ref(&self, thread: Thread<'a>) -> Option<Self::Ref> {
+		unsafe { LuauRef::new(thread.raw(), RawValue::new_closure(NonNull::from(self.0))) }
 	}
 }
 
-impl Closure {
-	pub unsafe fn from_raw(raw: NonNull<RawClosure>) -> Self { Self(raw) }
+impl<'a> Closure<'a> {
+	pub unsafe fn from_raw(raw: &'a RawClosure) -> Self { Self(raw) }
+	pub fn raw(&self) -> &'a RawClosure { self.0 }
 }

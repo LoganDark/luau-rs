@@ -13,21 +13,16 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-use luau_sys::luau::{lua_Type, TValue, Value};
-
-use crate::vm::value::AsTValue;
+use crate::vm::value::gc::Datatype;
+use crate::vm::value::thread::Thread;
 
 #[derive(Copy, Clone, PartialEq, Debug, Default)]
+#[repr(transparent)]
 pub struct Number(pub f64);
 
-unsafe impl AsTValue for Number {
-	fn as_tvalue(&self) -> TValue {
-		TValue {
-			value: Value { n: self.0 },
-			extra: Default::default(),
-			tt: lua_Type::LUA_TNUMBER as _,
-		}
-	}
+impl<'a> Datatype<'a> for Number {
+	type Ref = ();
+	fn acquire_ref(&self, _thread: Thread<'a>) -> Option<Self::Ref> { Some(()) }
 }
 
 impl From<f64> for Number {

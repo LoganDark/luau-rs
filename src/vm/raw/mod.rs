@@ -21,8 +21,10 @@ use std::ptr::NonNull;
 use luau_sys::luau::{global_State, luaL_newstate};
 use thread::RawThread;
 
-use crate::vm::Data;
+use crate::vm::data::Data;
+use crate::vm::raw::table::RawTable;
 
+pub mod value;
 pub mod string;
 pub mod table;
 pub mod closure;
@@ -54,4 +56,6 @@ impl RawGlobal {
 	pub unsafe fn set_userdata<GD>(&self, to: Data<GD>) { (*self.0.get()).cb.userdata = Box::into_raw(Pin::into_inner_unchecked(to)).cast() }
 	pub unsafe fn main_thread(&self) -> NonNull<RawThread> { RawThread::of(NonNull::from(self)) }
 	pub unsafe fn close(global: NonNull<Self>) { RawThread::close(global.as_ref().main_thread()) }
+
+	pub unsafe fn registry(&self) -> NonNull<RawTable> { RawTable::from_unchecked(self.registry.value.gc.cast()) }
 }

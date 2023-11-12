@@ -15,24 +15,24 @@
 
 use std::ptr::NonNull;
 
-use luau_sys::luau::{lua_Type, TValue, Value};
-
 use crate::vm::raw::string::RawString;
-use crate::vm::value::AsTValue;
+use crate::vm::raw::value::RawValue;
+use crate::vm::value::gc::{Datatype, LuauRef};
+use crate::vm::value::thread::Thread;
 
 #[derive(Clone, Debug)]
-pub struct LString(NonNull<RawString>);
+#[repr(transparent)]
+pub struct LString<'a>(&'a RawString);
 
-unsafe impl AsTValue for LString {
-	fn as_tvalue(&self) -> TValue {
-		TValue {
-			value: Value { gc: self.0.as_ptr().cast() },
-			extra: Default::default(),
-			tt: lua_Type::LUA_TSTRING as _,
-		}
+impl<'a> Datatype<'a> for LString<'a> {
+	type Ref = LuauRef<'a>;
+
+	fn acquire_ref(&self, thread: Thread<'a>) -> Option<Self::Ref> {
+		unsafe { LuauRef::new(thread.raw(), RawValue::new_string(NonNull::from(self.0))) }
 	}
 }
 
-impl LString {
-	pub unsafe fn from_raw(raw: NonNull<RawString>) -> Self { Self(raw) }
+impl<'a> LString<'a> {
+	pub unsafe fn from_raw(raw: &'a RawString) -> Self { Self(raw) }
+	pub fn raw(&self) -> &'a RawString { self.0 }
 }

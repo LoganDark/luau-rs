@@ -35,4 +35,5 @@ impl DerefMut for RawUserdata {
 impl RawUserdata {
 	pub fn from(ptr: *mut Udata) -> Option<NonNull<Self>> { NonNull::new(ptr).map(NonNull::cast) }
 	pub unsafe fn from_unchecked(ptr: *mut Udata) -> NonNull<Self> { NonNull::new_unchecked(ptr).cast() }
+	pub fn ptr(&self) -> *mut Udata { self.0.get() }
 }
