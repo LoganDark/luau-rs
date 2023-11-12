@@ -30,9 +30,9 @@ struct gluau_Buffer {
 	size_t len;
 };
 
-typedef void* FValue;
-typedef FValue FFlag;
-typedef FValue FInt;
+typedef void* gluau_FValue;
+typedef gluau_FValue gluau_FFlag;
+typedef gluau_FValue gluau_FInt;
 
 enum gluau_Optionality : uint8_t {
 	Some, None
@@ -40,20 +40,20 @@ enum gluau_Optionality : uint8_t {
 
 struct gluau_OptionalFValue {
 	enum gluau_Optionality presence;
-	FValue value;
+	gluau_FValue value;
 };
 
 GLUE_API struct gluau_OptionalFValue gluau_find_fflag(struct gluau_Buffer name);
 GLUE_API struct gluau_OptionalFValue gluau_find_fint(struct gluau_Buffer name);
 
-GLUE_API FFlag* gluau_get_fflags();
-GLUE_API FInt* gluau_get_fints();
+GLUE_API gluau_FFlag* gluau_get_fflags();
+GLUE_API gluau_FInt* gluau_get_fints();
 
-GLUE_API struct gluau_Buffer gluau_get_fflag_name(FFlag fflag);
-GLUE_API struct gluau_Buffer gluau_get_fint_name(FInt fflag);
+GLUE_API struct gluau_Buffer gluau_get_fflag_name(gluau_FFlag fflag);
+GLUE_API struct gluau_Buffer gluau_get_fint_name(gluau_FInt fflag);
 
-GLUE_API bool gluau_fflag_get(FFlag fflag);
-GLUE_API int gluau_fint_get(FInt fint);
+GLUE_API bool gluau_fflag_get(gluau_FFlag fflag);
+GLUE_API int gluau_fint_get(gluau_FInt fint);
 
-GLUE_API void gluau_fflag_set(FFlag fflag, bool value);
-GLUE_API void gluau_fint_set(FInt fint, int value);
+GLUE_API void gluau_fflag_set(gluau_FFlag fflag, bool value);
+GLUE_API void gluau_fint_set(gluau_FInt fint, int value);

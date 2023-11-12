@@ -15,3 +15,10 @@
 
 #pragma once
 
+#include "common.h"
+
+#include <lua.h> // lua_Status
+#include <lstate.h> // lua_State
+#include <lobject.h> // Table
+
+GLUE_API enum lua_Status gluauH_new(struct lua_State* L, int narray, int lnhash, struct Table* &result);

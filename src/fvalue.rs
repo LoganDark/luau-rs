@@ -22,8 +22,7 @@ mod __sealed {
 	use std::os::raw::c_int;
 	use std::ptr::NonNull;
 
-	use luau_sys::glue;
-	use luau_sys::glue::{FFlag, FInt, gluau_Buffer, gluau_fflag_get, gluau_find_fflag, gluau_find_fint, gluau_fint_get, gluau_fint_set, gluau_get_fflag_name, gluau_get_fflags, gluau_get_fint_name, gluau_get_fints};
+	use luau_sys::glue::{gluau_Buffer, gluau_FFlag, gluau_fflag_get, gluau_find_fflag, gluau_find_fint, gluau_FInt, gluau_fint_get, gluau_fint_set, gluau_get_fflag_name, gluau_get_fflags, gluau_get_fint_name, gluau_get_fints, gluau_Optionality};
 
 	use crate::luau_sys::glue::{gluau_fflag_set, gluau_OptionalFValue};
 
@@ -46,7 +45,7 @@ mod __sealed {
 
 	fn optional_fvalue_to_optional_fvalue(optional_fvalue: gluau_OptionalFValue) -> Option<*mut c_void> {
 		match optional_fvalue {
-			gluau_OptionalFValue { presence: glue::gluau_Optionality_Some, value } => {
+			gluau_OptionalFValue { presence: gluau_Optionality::Some, value } => {
 				Some(value)
 			}
 
@@ -79,7 +78,7 @@ mod __sealed {
 	}
 
 	impl FValueType for bool {
-		type Inner = FInt;
+		type Inner = gluau_FInt;
 
 		fn find(search: &str) -> Option<Self::Inner> {
 			optional_fvalue_to_optional_fvalue(unsafe { gluau_find_fflag(str2buf(search)) })
@@ -103,7 +102,7 @@ mod __sealed {
 	}
 
 	impl FValueType for c_int {
-		type Inner = FFlag;
+		type Inner = gluau_FFlag;
 
 		fn find(search: &str) -> Option<Self::Inner> {
 			optional_fvalue_to_optional_fvalue(unsafe { gluau_find_fint(str2buf(search)) })

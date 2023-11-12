@@ -13,16 +13,26 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-#![allow(non_camel_case_types, non_upper_case_globals, non_snake_case, improper_ctypes)]
+use std::ptr::NonNull;
 
-pub mod luau {
-	include!(concat!(env!("OUT_DIR"), "/luau.rs"));
+use luau_sys::luau::{lua_Type, TValue, Value};
+
+use crate::vm::raw::userdata::RawUserdata;
+use crate::vm::value::AsTValue;
+
+#[derive(Clone, Debug)]
+pub struct Userdata(NonNull<RawUserdata>);
+
+unsafe impl AsTValue for Userdata {
+	fn as_tvalue(&self) -> TValue {
+		TValue {
+			value: Value { gc: self.0.as_ptr().cast() },
+			extra: Default::default(),
+			tt: lua_Type::LUA_TUSERDATA as _,
+		}
+	}
 }
 
-#[cfg(any(feature = "glue"))]
-pub mod glue {
-	#[allow(unused_imports)]
-	use super::luau::*;
-
-	include!(concat!(env!("OUT_DIR"), "/glue.rs"));
+impl Userdata {
+	pub unsafe fn from_raw(raw: NonNull<RawUserdata>) -> Self { Self(raw) }
 }

@@ -18,35 +18,17 @@ use std::ops::{Deref, DerefMut};
 use std::pin::Pin;
 use std::ptr::NonNull;
 
-use luau_sys::luau::{global_State, lua_close, lua_State, luaL_newstate};
+use luau_sys::luau::{global_State, luaL_newstate};
+use thread::RawThread;
 
-use crate::vm::UserdataContainer;
+use crate::vm::Data;
 
-#[derive(Debug)]
-#[repr(transparent)]
-pub struct RawThread(UnsafeCell<lua_State>);
-
-impl Deref for RawThread {
-	type Target = lua_State;
-	fn deref(&self) -> &Self::Target { unsafe { &*self.0.get() } }
-}
-
-impl DerefMut for RawThread {
-	fn deref_mut(&mut self) -> &mut Self::Target { self.0.get_mut() }
-}
-
-impl RawThread {
-	pub fn from(ptr: *mut lua_State) -> Option<NonNull<Self>> { NonNull::new(ptr).map(NonNull::cast) }
-	pub unsafe fn from_unchecked(ptr: *mut lua_State) -> NonNull<Self> { NonNull::new_unchecked(ptr).cast() }
-	pub unsafe fn of(global: NonNull<RawGlobal>) -> NonNull<Self> { Self::from_unchecked(global.as_ref().mainthread) }
-	pub fn new() -> Option<NonNull<Self>> { Self::from(unsafe { luaL_newstate() }) }
-
-	pub fn ptr(&self) -> *mut lua_State { self.0.get() }
-	pub unsafe fn global(&self) -> NonNull<RawGlobal> { RawGlobal::of(NonNull::from(self)) }
-	pub unsafe fn get_userdata<UD>(&self) -> UserdataContainer<UD> { Pin::new_unchecked(Box::from_raw(self.userdata.cast())) }
-	pub unsafe fn set_userdata<UD>(&mut self, to: UserdataContainer<UD>) { self.userdata = Box::into_raw(Pin::into_inner_unchecked(to)).cast() }
-	pub unsafe fn close(thread: NonNull<Self>) { lua_close(thread.as_ptr().cast()) }
-}
+pub mod string;
+pub mod table;
+pub mod closure;
+pub mod userdata;
+pub mod thread;
+pub mod buffer;
 
 #[derive(Debug)]
 #[repr(transparent)]
@@ -65,9 +47,11 @@ impl RawGlobal {
 	pub fn from(ptr: *mut global_State) -> Option<NonNull<Self>> { NonNull::new(ptr).map(NonNull::cast) }
 	pub unsafe fn from_unchecked(ptr: *mut global_State) -> NonNull<Self> { NonNull::new_unchecked(ptr).cast() }
 	pub unsafe fn of(thread: NonNull<RawThread>) -> NonNull<Self> { Self::from_unchecked(thread.as_ref().global) }
-	pub fn new() -> Option<NonNull<Self>> { Some(unsafe { Self::of(RawThread::new()?) }) }
+	pub fn new() -> Option<NonNull<Self>> { Some(unsafe { Self::of(RawThread::from(luaL_newstate())?) }) }
 
 	pub fn ptr(&self) -> *mut global_State { self.0.get() }
+	pub unsafe fn get_userdata<GD>(&self) -> Data<GD> { Pin::new_unchecked(Box::from_raw(self.cb.userdata.cast())) }
+	pub unsafe fn set_userdata<GD>(&self, to: Data<GD>) { (*self.0.get()).cb.userdata = Box::into_raw(Pin::into_inner_unchecked(to)).cast() }
 	pub unsafe fn main_thread(&self) -> NonNull<RawThread> { RawThread::of(NonNull::from(self)) }
 	pub unsafe fn close(global: NonNull<Self>) { RawThread::close(global.as_ref().main_thread()) }
 }

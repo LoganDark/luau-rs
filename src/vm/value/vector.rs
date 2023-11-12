@@ -13,16 +13,30 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-#![allow(non_camel_case_types, non_upper_case_globals, non_snake_case, improper_ctypes)]
+use std::ffi::c_int;
 
-pub mod luau {
-	include!(concat!(env!("OUT_DIR"), "/luau.rs"));
+use luau_sys::luau::{lua_Type, TValue, Value};
+
+use crate::vm::value::AsTValue;
+
+#[derive(Copy, Clone, PartialEq, Debug, Default)]
+pub struct Vector(pub [f32; 3]);
+
+unsafe impl AsTValue for Vector {
+	fn as_tvalue(&self) -> TValue {
+		let [x, y, z] = self.0;
+		TValue {
+			value: Value { v: [x, y] },
+			extra: [c_int::from_ne_bytes(z.to_ne_bytes())],
+			tt: lua_Type::LUA_TVECTOR as _,
+		}
+	}
 }
 
-#[cfg(any(feature = "glue"))]
-pub mod glue {
-	#[allow(unused_imports)]
-	use super::luau::*;
+impl From<[f32; 3]> for Vector {
+	fn from(value: [f32; 3]) -> Self { Self(value) }
+}
 
-	include!(concat!(env!("OUT_DIR"), "/glue.rs"));
+impl From<Vector> for [f32; 3] {
+	fn from(value: Vector) -> Self { value.0 }
 }

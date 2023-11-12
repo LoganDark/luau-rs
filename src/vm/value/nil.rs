@@ -13,16 +13,19 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-#![allow(non_camel_case_types, non_upper_case_globals, non_snake_case, improper_ctypes)]
+use luau_sys::luau::{lua_Type, TValue, Value};
 
-pub mod luau {
-	include!(concat!(env!("OUT_DIR"), "/luau.rs"));
-}
+use crate::vm::value::AsTValue;
 
-#[cfg(any(feature = "glue"))]
-pub mod glue {
-	#[allow(unused_imports)]
-	use super::luau::*;
+#[derive(Copy, Clone, Eq, PartialEq, Debug, Default)]
+pub struct Nil;
 
-	include!(concat!(env!("OUT_DIR"), "/glue.rs"));
+unsafe impl AsTValue for Nil {
+	fn as_tvalue(&self) -> TValue {
+		TValue {
+			value: Value { b: 0 },
+			extra: Default::default(),
+			tt: lua_Type::LUA_TNIL as _,
+		}
+	}
 }

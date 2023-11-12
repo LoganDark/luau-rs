@@ -13,16 +13,26 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-#![allow(non_camel_case_types, non_upper_case_globals, non_snake_case, improper_ctypes)]
+use std::cell::UnsafeCell;
+use std::ops::{Deref, DerefMut};
+use std::ptr::NonNull;
 
-pub mod luau {
-	include!(concat!(env!("OUT_DIR"), "/luau.rs"));
+use luau_sys::luau::TString;
+
+#[derive(Debug)]
+#[repr(transparent)]
+pub struct RawString(UnsafeCell<TString>);
+
+impl Deref for RawString {
+	type Target = TString;
+	fn deref(&self) -> &Self::Target { unsafe { &*self.0.get() } }
 }
 
-#[cfg(any(feature = "glue"))]
-pub mod glue {
-	#[allow(unused_imports)]
-	use super::luau::*;
+impl DerefMut for RawString {
+	fn deref_mut(&mut self) -> &mut Self::Target { self.0.get_mut() }
+}
 
-	include!(concat!(env!("OUT_DIR"), "/glue.rs"));
+impl RawString {
+	pub fn from(ptr: *mut TString) -> Option<NonNull<Self>> { NonNull::new(ptr).map(NonNull::cast) }
+	pub unsafe fn from_unchecked(ptr: *mut TString) -> NonNull<Self> { NonNull::new_unchecked(ptr).cast() }
 }

@@ -13,16 +13,27 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-#![allow(non_camel_case_types, non_upper_case_globals, non_snake_case, improper_ctypes)]
+use luau_sys::luau::{lua_Type, TValue, Value};
 
-pub mod luau {
-	include!(concat!(env!("OUT_DIR"), "/luau.rs"));
+use crate::vm::value::AsTValue;
+
+#[derive(Copy, Clone, PartialEq, Debug, Default)]
+pub struct Number(pub f64);
+
+unsafe impl AsTValue for Number {
+	fn as_tvalue(&self) -> TValue {
+		TValue {
+			value: Value { n: self.0 },
+			extra: Default::default(),
+			tt: lua_Type::LUA_TNUMBER as _,
+		}
+	}
 }
 
-#[cfg(any(feature = "glue"))]
-pub mod glue {
-	#[allow(unused_imports)]
-	use super::luau::*;
+impl From<f64> for Number {
+	fn from(value: f64) -> Self { Self(value) }
+}
 
-	include!(concat!(env!("OUT_DIR"), "/glue.rs"));
+impl From<Number> for f64 {
+	fn from(value: Number) -> Self { value.0 }
 }

@@ -13,6 +13,9 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+#[allow(deprecated)]
+use bindgen::{CargoCallbacks, EnumVariation};
+
 #[cfg(any(feature = "link", feature = "glue"))]
 fn main() {
 	let out_dir = std::env::var("OUT_DIR").expect("couldn't find output directory");
@@ -71,11 +74,13 @@ fn main() {
 
 	#[cfg(any(feature = "ast", feature = "vm"))] {
 		let mut luau_bindgen = bindgen::builder()
+			.parse_callbacks(Box::new(CargoCallbacks::new()))
 			.clang_arg("-Iluau/Common/include")
 			.clang_arg("-Iluau/Ast/include")
 			.clang_arg("-Iluau/Compiler/include")
 			.clang_arg("-Iluau/Analysis/include")
 			.clang_arg("-Iluau/VM/include")
+			.clang_arg("-Iluau/VM/src")
 			.clang_arg("-std=c++17")
 			.allowlist_var("LUA.*")
 			.allowlist_function("lua.*")
@@ -84,8 +89,11 @@ fn main() {
 			.blocklist_item("Luau::list")
 			.allowlist_function("Luau::.*")
 			.allowlist_type("Luau::.*")
+			.allowlist_var("GCS.+|WHITE[01]BIT|BLACKBIT|FIXEDBIT|WHITEBITS")
 			.opaque_type("std::.*")
-			.opaque_type("Luau::DenseHash.*");
+			.opaque_type("Luau::DenseHash.*")
+			.default_enum_style(EnumVariation::Rust { non_exhaustive: false })
+			.fit_macro_constants(true);
 
 		#[cfg(feature = "ast")] {
 			luau_bindgen = luau_bindgen.header("ast.hpp");
@@ -103,6 +111,8 @@ fn main() {
 			.expect("couldn't generate Luau bindings")
 			.write_to_file(format!("{}/luau.rs", out_dir))
 			.expect("couldn't write Luau bindings to file");
+
+		eprintln!("successfully generated Luau bindings");
 	}
 
 	#[cfg(feature = "glue")] {
@@ -114,21 +124,30 @@ fn main() {
 			.flag("-Iluau/Compiler/include")
 			.flag("-Iluau/Analysis/include")
 			.flag("-Iluau/VM/include")
+			.flag("-Iluau/VM/src")
 			// MSVC requires /std:c++latest for designated initializers
 			// I quite like them so I'm not going to stop using them
 			// Windows being special for the fourth time
 			.flag(if cfg!(target_os = "windows") { "/std:c++latest" } else { "-std=c++17" })
 			.static_crt(true);
 
+		#[cfg(target_os = "windows")]
+		glue_cc.flag("/EHsc");
+
 		let mut glue_bindgen = bindgen::builder()
+			.parse_callbacks(Box::new(CargoCallbacks::new()))
 			.clang_args([
 				"-Iluau/Common/include",
 				"-Iluau/Ast/include",
 				"-Iluau/Compiler/include",
 				"-Iluau/Analysis/include",
-				"-Iluau/VM/include"
+				"-Iluau/VM/include",
+				"-Iluau/VM/src",
+				"-xc++"
 			])
-			.allowlist_function("gluau_.*");
+			.allowlist_item("gluau.*")
+			.allowlist_recursively(false)
+			.default_enum_style(EnumVariation::Rust { non_exhaustive: false });
 
 		macro_rules! glue {
 			($feat:literal) => {
@@ -152,11 +171,15 @@ fn main() {
 
 		// cc links automatically
 		glue_cc.compile("gluau");
+		eprintln!("successfully built glue code");
+
 		glue_bindgen
 			.generate()
 			.expect("couldn't generate Luau glue bindings")
 			.write_to_file(format!("{}/glue.rs", out_dir))
 			.expect("couldn't write Luau glue bindings to file");
+
+		eprintln!("successfully generated glue code bindings");
 	}
 
 	// all should be good

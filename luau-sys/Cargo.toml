@@ -18,6 +18,6 @@ vm = ['glue']
 [dependencies]
 
 [build-dependencies]
-bindgen = "~0.59.1"
+bindgen = "~0.69.1"
 cmake = "~0.1.46"
 cc = "^1.0.71"

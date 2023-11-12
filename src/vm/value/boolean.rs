@@ -13,16 +13,27 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-#![allow(non_camel_case_types, non_upper_case_globals, non_snake_case, improper_ctypes)]
+use luau_sys::luau::{lua_Type, TValue, Value};
 
-pub mod luau {
-	include!(concat!(env!("OUT_DIR"), "/luau.rs"));
+use crate::vm::value::AsTValue;
+
+#[derive(Copy, Clone, Eq, PartialEq, Debug, Default)]
+pub struct Boolean(pub bool);
+
+unsafe impl AsTValue for Boolean {
+	fn as_tvalue(&self) -> TValue {
+		TValue {
+			value: Value { b: self.0 as _ },
+			extra: Default::default(),
+			tt: lua_Type::LUA_TBOOLEAN as _,
+		}
+	}
 }
 
-#[cfg(any(feature = "glue"))]
-pub mod glue {
-	#[allow(unused_imports)]
-	use super::luau::*;
+impl From<bool> for Boolean {
+	fn from(value: bool) -> Self { Self(value) }
+}
 
-	include!(concat!(env!("OUT_DIR"), "/glue.rs"));
+impl From<Boolean> for bool {
+	fn from(value: Boolean) -> Self { value.0 }
 }
