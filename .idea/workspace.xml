@@ -9,12 +9,8 @@
   <component name="ChangeListManager">
     <list default="true" id="f6478834-ca64-42a5-9177-17867eba13c5" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/examples/basic_run.rs" beforeDir="false" afterPath="$PROJECT_DIR$/examples/basic_run.rs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/luau-sys/src/glue/vm.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/luau-sys/src/glue/vm.cpp" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/luau-sys/src/glue/vm.h" beforeDir="false" afterPath="$PROJECT_DIR$/luau-sys/src/glue/vm.h" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/vm/mod.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/vm/mod.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/vm/raw/table.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/vm/raw/table.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/vm/raw/thread/mod.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/vm/raw/thread/mod.rs" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />

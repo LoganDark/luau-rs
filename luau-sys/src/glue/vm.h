@@ -18,8 +18,11 @@
 #include "common.h"
 
 #include <lua.h> // lua_Status
-#include <lstate.h> // lua_State
-#include <lobject.h> // Table
+#include <lobject.h> // TString, Table, Udata, Buffer
 
-GLUE_API enum lua_Status gluauH_new(struct lua_State* L, int narray, int lnhash, struct Table* &result);
 GLUE_API enum lua_Status gluau_ref(struct lua_State* L, int idx, int &result);
+GLUE_API enum lua_Status gluauS_newlstr(struct lua_State* L, const char* str, size_t len, struct TString* &result);
+GLUE_API enum lua_Status gluauH_new(struct lua_State* L, int narray, int lnhash, struct Table* &result);
+GLUE_API enum lua_Status gluauU_newudata(struct lua_State* L, size_t size, int tag, struct Udata* &result);
+GLUE_API enum lua_Status gluau_newthread(struct lua_State* L, struct lua_State* &result);
+GLUE_API enum lua_Status gluauB_newbuffer(struct lua_State* L, size_t len, struct Buffer* &result);
