@@ -58,4 +58,6 @@ impl RawThread {
 			luaC_barrierback(self.ptr(), self.ptr().cast(), &mut (*self.ptr()).gclist);
 		}
 	}
+
+	pub unsafe fn global_table(&self) -> NonNull<RawTable> { RawTable::from_unchecked(self.gt) }
 }

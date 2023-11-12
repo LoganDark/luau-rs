@@ -13,28 +13,32 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-use std::ffi::CStr;
-
-use luau::vm::{Luau, StackValue, Value};
+use luau::vm::Luau;
 
 fn main() {
-	let vm = Luau::new().expect("failed to create Luau VM");
+	let vm = Luau::builder()
+		.no_data().expect("failed to create Luau VM")
+		.all_libs()
+		.setup(|luau| {
+			eprintln!("{:?}", luau);
+		});
+
 	let compiled = Luau::compile("return ...")
 		.expect("failed to compile function");
 
-	let chunkname = CStr::from_bytes_with_nul(b"=basic_run.luau\0").expect("die");
-	let main_thread = vm.main_thread();
-	let function = main_thread.load_compiled(compiled, chunkname)
-		.expect("failed to load function");
-
-	println!("{:?}", function.call_sync([
-		Value::new_string(&main_thread, "hello world").unwrap(),
-		Value::new_string(&main_thread, "I like trains").unwrap(),
-		Value::new_string(&main_thread, "how about a table?").unwrap(),
-		Value::new_table(&main_thread, 0, 0).unwrap(),
-		Value::new_string(&main_thread, "I like trains").unwrap()
-	]));
-
-	// assert stack usage is balanced
-	assert_eq!(unsafe { StackValue::stack(main_thread.as_ptr()) }, Vec::new());
+	// let chunkname = CStr::from_bytes_with_nul(b"=basic_run.luau\0").expect("die");
+	// let main_thread = vm.main_thread();
+	// let function = main_thread.load_compiled(compiled, chunkname)
+	// 	.expect("failed to load function");
+	//
+	// println!("{:?}", function.call_sync([
+	// 	Value::new_string(&main_thread, "hello world").unwrap(),
+	// 	Value::new_string(&main_thread, "I like trains").unwrap(),
+	// 	Value::new_string(&main_thread, "how about a table?").unwrap(),
+	// 	Value::new_table(&main_thread, 0, 0).unwrap(),
+	// 	Value::new_string(&main_thread, "I like trains").unwrap()
+	// ]));
+	//
+	// // assert stack usage is balanced
+	// assert_eq!(unsafe { StackValue::stack(main_thread.as_ptr()) }, Vec::new());
 }

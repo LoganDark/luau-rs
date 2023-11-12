@@ -21,6 +21,7 @@ use luau_sys::luau::lua_State;
 use value::thread::Thread;
 
 use crate::compiler::{compile, compile_sneakily, CompiledFunction, CompileError};
+use crate::vm::builder::LuauBuildData;
 use crate::vm::raw::RawGlobal;
 use crate::vm::raw::thread::RawThread;
 
@@ -28,6 +29,7 @@ pub mod error;
 pub mod raw;
 pub mod value;
 pub mod data;
+pub mod builder;
 
 #[derive(Debug)]
 pub struct Luau<D: GlobalData> {
@@ -42,7 +44,7 @@ impl<D: GlobalData> Drop for Luau<D> {
 }
 
 impl<D: GlobalData> Luau<D> {
-	pub fn with_data(global_data: Data<D>, thread_data: Data<D::ThreadData>) -> Option<Self> {
+	pub(crate) fn new(global_data: Data<D>, thread_data: Data<D::ThreadData>) -> Option<Self> {
 		unsafe {
 			let mut global = RawGlobal::new()?;
 			global.as_ref().set_userdata(global_data);
@@ -67,12 +69,7 @@ impl<D: GlobalData> Luau<D> {
 }
 
 impl Luau<()> {
-	/// Attempts to create a new Luau virtual machine, with no userdata type.
-	/// The virtual machine is created using `luaL_newstate`. `None` is returned
-	/// if there was an allocation error.
-	pub fn new() -> Option<Self> {
-		Self::with_data(Box::pin(()), Box::pin(()))
-	}
+	pub fn builder() -> LuauBuildData { LuauBuildData }
 
 	/// Compiles Luau source code. The compiled function can then be loaded into
 	/// a thread and executed.
