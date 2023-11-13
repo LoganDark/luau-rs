@@ -15,24 +15,35 @@
 
 use std::ptr::NonNull;
 
+use luau_sys::glue::gluauU_newudata;
+
+use crate::vm::error::{LError, LResult};
 use crate::vm::raw::userdata::RawUserdata;
 use crate::vm::raw::value::RawValue;
 use crate::vm::value::gc::{Datatype, LuauRef};
 use crate::vm::value::thread::Thread;
 
-#[derive(Clone, Debug)]
+#[derive(Debug)]
 #[repr(transparent)]
 pub struct Userdata<'a>(&'a RawUserdata);
 
-impl<'a> Datatype<'a> for Userdata<'a> {
+unsafe impl<'a> Datatype<'a> for Userdata<'a> {
 	type Ref = LuauRef<'a>;
 
-	fn acquire_ref(&self, thread: Thread<'a>) -> Option<Self::Ref> {
-		unsafe { LuauRef::new(thread.raw(), RawValue::new_userdata(NonNull::from(self.0))) }
+	fn acquire_ref(&self, thread: &'a Thread<'a>) -> LResult<'a, Self::Ref> {
+		unsafe { LuauRef::new(thread, RawValue::new_userdata(NonNull::from(self.0))) }
 	}
+
+	fn raw_value(&self) -> RawValue { unsafe { RawValue::new_userdata(NonNull::from(self.0)) } }
 }
 
 impl<'a> Userdata<'a> {
 	pub unsafe fn from_raw(raw: &'a RawUserdata) -> Self { Self(raw) }
 	pub fn raw(&self) -> &'a RawUserdata { self.0 }
+
+	pub unsafe fn new(thread: &'a Thread<'a>, size: usize, tag: u8) -> LResult<'a, Self> {
+		LError::protect(thread, false, move |result: *mut Self| {
+			gluauU_newudata(thread.raw().ptr(), size, tag as _, result.cast())
+		})
+	}
 }

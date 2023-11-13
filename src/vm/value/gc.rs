@@ -16,41 +16,37 @@
 use std::ffi::c_int;
 
 use luau_sys::glue::gluau_ref;
-use luau_sys::luau::{LUA_NOREF, lua_Status, lua_unref, luaH_getnum};
+use luau_sys::luau::{lua_unref, luaH_getnum};
 
-use crate::vm::raw::thread::RawThread;
+use crate::vm::error::{LError, LResult};
 use crate::vm::raw::value::RawValue;
 use crate::vm::value::thread::Thread;
 
 #[derive(Debug)]
 pub struct LuauRef<'a> {
-	thread: &'a RawThread,
+	thread: &'a Thread<'a>,
 	handle: c_int
 }
 
 impl<'a> LuauRef<'a> {
-	pub unsafe fn new(thread: &'a RawThread, value: RawValue) -> Option<Self> {
-		thread.stack().save_restore(move |stack| {
-			stack.push(value.into_tvalue());
+	pub unsafe fn new(thread: &'a Thread<'a>, value: RawValue) -> LResult<'a, Self> {
+		thread.raw().stack().push(value).ok_or(LError::StackOverflow)?;
 
-			let mut handle = LUA_NOREF;
-			match gluau_ref(thread.ptr(), -1, &mut handle) {
-				lua_Status::LUA_OK => Some(Self { thread, handle }),
-				_ => None
-			}
-		})
+		LError::protect(thread, false, move |handle| {
+			gluau_ref(thread.raw().ptr(), -1, handle)
+		}).map(|handle| Self { thread, handle })
 	}
 
 	pub unsafe fn get(&self) -> RawValue {
-		let registry = self.thread.registry();
+		let registry = self.thread.raw().registry();
 		let slot = luaH_getnum(registry.as_ptr().cast(), self.handle);
-		RawValue::from_tvalue(*slot)
+		RawValue::from(*slot)
 	}
 }
 
 impl<'a> Drop for LuauRef<'a> {
 	fn drop(&mut self) {
-		unsafe { lua_unref(self.thread.ptr(), self.handle); }
+		unsafe { lua_unref(self.thread.raw().ptr(), self.handle); }
 	}
 }
 
@@ -60,7 +56,8 @@ impl<'a> Clone for LuauRef<'a> {
 	}
 }
 
-pub trait Datatype<'a> {
+pub unsafe trait Datatype<'a> {
 	type Ref;
-	fn acquire_ref(&self, thread: Thread<'a>) -> Option<Self::Ref>;
+	fn acquire_ref(&self, thread: &'a Thread<'a>) -> LResult<'a, Self::Ref>;
+	fn raw_value(&self) -> RawValue;
 }

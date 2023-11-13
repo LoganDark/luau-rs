@@ -15,21 +15,24 @@
 
 use std::ptr::NonNull;
 
+use crate::vm::error::LResult;
 use crate::vm::raw::closure::RawClosure;
 use crate::vm::raw::value::RawValue;
 use crate::vm::value::gc::{Datatype, LuauRef};
 use crate::vm::value::thread::Thread;
 
-#[derive(Clone, Debug)]
+#[derive(Debug)]
 #[repr(transparent)]
 pub struct Closure<'a>(&'a RawClosure);
 
-impl<'a> Datatype<'a> for Closure<'a> {
+unsafe impl<'a> Datatype<'a> for Closure<'a> {
 	type Ref = LuauRef<'a>;
 
-	fn acquire_ref(&self, thread: Thread<'a>) -> Option<Self::Ref> {
-		unsafe { LuauRef::new(thread.raw(), RawValue::new_closure(NonNull::from(self.0))) }
+	fn acquire_ref(&self, thread: &'a Thread<'a>) -> LResult<'a, Self::Ref> {
+		unsafe { LuauRef::new(thread, RawValue::new_closure(NonNull::from(self.0))) }
 	}
+
+	fn raw_value(&self) -> RawValue { unsafe { RawValue::new_closure(NonNull::from(self.0)) } }
 }
 
 impl<'a> Closure<'a> {

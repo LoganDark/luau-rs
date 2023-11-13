@@ -37,9 +37,9 @@ impl GlobalData for () {
 }
 
 pub trait ThreadData: Sized {
-	fn derive(parent: Thread) -> Data<Self>;
+	fn derive(parent: &Thread) -> Data<Self>;
 }
 
 impl ThreadData for () {
-	fn derive(_parent: Thread) -> Data<Self> { Box::pin(()) }
+	fn derive(_parent: &Thread) -> Data<Self> { Box::pin(()) }
 }

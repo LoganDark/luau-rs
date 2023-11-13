@@ -13,13 +13,10 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-use std::convert::TryFrom;
-use std::ffi::c_int;
 use std::mem::transmute;
-use std::ops::Deref;
 use std::ptr::NonNull;
 
-use luau_sys::luau::{GCObject, lua_Type, TValue, Value};
+use luau_sys::luau::{lua_Type, TValue};
 
 use crate::vm::raw::buffer::RawBuffer;
 use crate::vm::raw::closure::RawClosure;
@@ -28,9 +25,9 @@ use crate::vm::raw::table::RawTable;
 use crate::vm::raw::thread::RawThread;
 use crate::vm::raw::userdata::RawUserdata;
 
-#[repr(u8)]
 #[derive(Copy, Clone, Eq, PartialEq, Debug, Default)]
-pub enum RawValueType {
+#[repr(u32)]
+pub enum RawValueTag {
 	#[default]
 	Nil = lua_Type::LUA_TNIL as _,
 	Boolean = lua_Type::LUA_TBOOLEAN as _,
@@ -45,51 +42,49 @@ pub enum RawValueType {
 	Buffer = lua_Type::LUA_TBUFFER as _
 }
 
-impl TryFrom<lua_Type> for RawValueType {
-	type Error = ();
+#[derive(Copy, Clone)]
+#[repr(C, packed(4))]
+pub union RawValueData {
+	pub nil: (),
+	pub boolean: bool,
+	pub lightuserdata: *mut (),
+	pub number: f64,
+	pub vector: [f32; 3],
+	pub string: NonNull<RawString>,
+	pub table: NonNull<RawTable>,
+	pub closure: NonNull<RawClosure>,
+	pub userdata: NonNull<RawUserdata>,
+	pub thread: NonNull<RawThread>,
+	pub buffer: NonNull<RawBuffer>
+}
 
-	fn try_from(value: lua_Type) -> Result<Self, Self::Error> {
+impl From<lua_Type> for RawValueTag {
+	fn from(value: lua_Type) -> Self {
 		match value {
-			lua_Type::LUA_TNIL => Ok(Self::Nil),
-			lua_Type::LUA_TBOOLEAN => Ok(Self::Boolean),
-			lua_Type::LUA_TLIGHTUSERDATA => Ok(Self::LightUserdata),
-			lua_Type::LUA_TNUMBER => Ok(Self::Number),
-			lua_Type::LUA_TVECTOR => Ok(Self::Vector),
-			lua_Type::LUA_TSTRING => Ok(Self::String),
-			lua_Type::LUA_TTABLE => Ok(Self::Table),
-			lua_Type::LUA_TFUNCTION => Ok(Self::Closure),
-			lua_Type::LUA_TUSERDATA => Ok(Self::Userdata),
-			lua_Type::LUA_TTHREAD => Ok(Self::Thread),
-			lua_Type::LUA_TBUFFER => Ok(Self::Buffer),
+			lua_Type::LUA_TNIL => Self::Nil,
+			lua_Type::LUA_TBOOLEAN => Self::Boolean,
+			lua_Type::LUA_TLIGHTUSERDATA => Self::LightUserdata,
+			lua_Type::LUA_TNUMBER => Self::Number,
+			lua_Type::LUA_TVECTOR => Self::Vector,
+			lua_Type::LUA_TSTRING => Self::String,
+			lua_Type::LUA_TTABLE => Self::Table,
+			lua_Type::LUA_TFUNCTION => Self::Closure,
+			lua_Type::LUA_TUSERDATA => Self::Userdata,
+			lua_Type::LUA_TTHREAD => Self::Thread,
+			lua_Type::LUA_TBUFFER => Self::Buffer,
 			lua_Type::LUA_TPROTO |
 			lua_Type::LUA_TUPVAL |
-			lua_Type::LUA_TDEADKEY => Err(())
+			lua_Type::LUA_TDEADKEY => Self::Nil
 		}
 	}
 }
 
-impl From<RawValueType> for lua_Type {
-	fn from(value: RawValueType) -> Self {
-		match value {
-			RawValueType::Nil => lua_Type::LUA_TNIL,
-			RawValueType::Boolean => lua_Type::LUA_TBOOLEAN,
-			RawValueType::LightUserdata => lua_Type::LUA_TLIGHTUSERDATA,
-			RawValueType::Number => lua_Type::LUA_TNUMBER,
-			RawValueType::Vector => lua_Type::LUA_TVECTOR,
-			RawValueType::String => lua_Type::LUA_TSTRING,
-			RawValueType::Table => lua_Type::LUA_TTABLE,
-			RawValueType::Closure => lua_Type::LUA_TFUNCTION,
-			RawValueType::Userdata => lua_Type::LUA_TUSERDATA,
-			RawValueType::Thread => lua_Type::LUA_TTHREAD,
-			RawValueType::Buffer => lua_Type::LUA_TBUFFER
-		}
-	}
+impl From<RawValueTag> for lua_Type {
+	fn from(value: RawValueTag) -> Self { unsafe { transmute(value) } }
 }
 
-impl RawValueType {
-	pub fn into_lua_type(self) -> lua_Type { self.into() }
-
-	pub fn is_value_type(&self) -> bool {
+impl RawValueTag {
+	pub fn is_value(&self) -> bool {
 		matches!(self, Self::Nil | Self::Boolean | Self::LightUserdata | Self::Number | Self::Vector)
 	}
 
@@ -98,102 +93,38 @@ impl RawValueType {
 	}
 }
 
-#[derive(Copy, Clone, Debug)]
-pub enum RawValueData {
-	Nil,
-	Boolean(bool),
-	LightUserdata(*mut ()),
-	Number(f64),
-	Vector([f32; 3]),
-	String(NonNull<RawString>),
-	Table(NonNull<RawTable>),
-	Closure(NonNull<RawClosure>),
-	Userdata(NonNull<RawUserdata>),
-	Thread(NonNull<RawThread>),
-	Buffer(NonNull<RawBuffer>)
-}
-
-impl RawValueData {
-	pub unsafe fn from_tvalue(value: TValue) -> Self {
-		match RawValue::from_tvalue(value).value_type() {
-			RawValueType::Nil => Self::Nil,
-			RawValueType::Boolean => Self::Boolean(value.value.b == 1),
-			RawValueType::LightUserdata => Self::LightUserdata(value.value.p.cast()),
-			RawValueType::Number => Self::Number(value.value.n),
-			RawValueType::Vector => Self::Vector({
-				let [x, y] = value.value.v;
-				let z = f32::from_ne_bytes(value.extra[0].to_ne_bytes());
-				[x, y, z]
-			}),
-			RawValueType::String => Self::String(NonNull::new_unchecked(value.value.gc).cast()),
-			RawValueType::Table => Self::Table(NonNull::new_unchecked(value.value.gc).cast()),
-			RawValueType::Closure => Self::Closure(NonNull::new_unchecked(value.value.gc).cast()),
-			RawValueType::Userdata => Self::Userdata(NonNull::new_unchecked(value.value.gc).cast()),
-			RawValueType::Thread => Self::Thread(NonNull::new_unchecked(value.value.gc).cast()),
-			RawValueType::Buffer => Self::Buffer(NonNull::new_unchecked(value.value.gc).cast())
-		}
-	}
-}
-
 #[derive(Copy, Clone)]
-#[repr(transparent)]
-pub struct RawValue(TValue);
-
-impl Deref for RawValue {
-	type Target = TValue;
-	fn deref(&self) -> &Self::Target { &self.0 }
+#[repr(C, packed(4))]
+pub struct RawValue {
+	data: RawValueData,
+	tag: RawValueTag
 }
 
 impl From<TValue> for RawValue {
-	fn from(value: TValue) -> Self { Self(value) }
+	fn from(value: TValue) -> Self { unsafe { transmute(value) } }
 }
 
 impl From<RawValue> for TValue {
-	fn from(value: RawValue) -> Self { value.0 }
+	fn from(value: RawValue) -> Self { unsafe { transmute(value) } }
 }
 
 impl RawValue {
-	pub unsafe fn from_tvalue(value: TValue) -> Self { Self(value) }
-	pub fn into_tvalue(self) -> TValue { self.0 }
+	pub unsafe fn new(data: RawValueData, tag: RawValueTag) -> Self { Self { data, tag } }
+	pub unsafe fn new_nil() -> Self { Self::new(RawValueData { nil: () }, RawValueTag::Nil) }
+	pub unsafe fn new_boolean(value: bool) -> Self { Self::new(RawValueData { boolean: value }, RawValueTag::Boolean) }
+	pub unsafe fn new_lightuserdata(value: *mut ()) -> Self { Self::new(RawValueData { lightuserdata: value }, RawValueTag::LightUserdata) }
+	pub unsafe fn new_number(value: f64) -> Self { Self::new(RawValueData { number: value }, RawValueTag::Number) }
+	pub unsafe fn new_vector(value: [f32; 3]) -> Self { Self::new(RawValueData { vector: value }, RawValueTag::Vector) }
+	pub unsafe fn new_string(value: NonNull<RawString>) -> Self { Self::new(RawValueData { string: value }, RawValueTag::String) }
+	pub unsafe fn new_table(value: NonNull<RawTable>) -> Self { Self::new(RawValueData { table: value }, RawValueTag::Table) }
+	pub unsafe fn new_closure(value: NonNull<RawClosure>) -> Self { Self::new(RawValueData { closure: value }, RawValueTag::Closure) }
+	pub unsafe fn new_userdata(value: NonNull<RawUserdata>) -> Self { Self::new(RawValueData { userdata: value }, RawValueTag::Userdata) }
+	pub unsafe fn new_thread(value: NonNull<RawThread>) -> Self { Self::new(RawValueData { thread: value }, RawValueTag::Thread) }
+	pub unsafe fn new_buffer(value: NonNull<RawBuffer>) -> Self { Self::new(RawValueData { buffer: value }, RawValueTag::Buffer) }
 
-	pub unsafe fn new(value: Value, extra: [c_int; 1], tag: RawValueType) -> Self {
-		Self(TValue { value, extra, tt: tag.into_lua_type() as _ })
-	}
+	pub fn data(&self) -> &RawValueData { &self.data }
+	pub fn tag(&self) -> RawValueTag { self.tag }
 
-	pub unsafe fn new_nil() -> Self { Self::new(Value { b: 0 }, [0], RawValueType::Nil) }
-	pub unsafe fn new_boolean(value: bool) -> Self { Self::new(Value { b: value as _ }, [0], RawValueType::Boolean) }
-	pub unsafe fn new_lightuserdata(value: *mut ()) -> Self { Self::new(Value { p: value.cast() }, [0], RawValueType::LightUserdata) }
-	pub unsafe fn new_number(value: f64) -> Self { Self::new(Value { n: value }, [0], RawValueType::Number) }
-
-	pub unsafe fn new_vector(value: [f32; 3]) -> Self {
-		let [x, y, z] = value;
-		Self::new(Value { v: [x, y] }, [c_int::from_ne_bytes(z.to_ne_bytes())], RawValueType::Vector)
-	}
-
-	pub unsafe fn new_gc(value: NonNull<GCObject>, tag: RawValueType) -> Self { Self::new(Value { gc: value.as_ptr() }, [0], tag) }
-	pub unsafe fn new_string(value: NonNull<RawString>) -> Self { Self::new_gc(value.cast(), RawValueType::String) }
-	pub unsafe fn new_table(value: NonNull<RawTable>) -> Self { Self::new_gc(value.cast(), RawValueType::Table) }
-	pub unsafe fn new_closure(value: NonNull<RawClosure>) -> Self { Self::new_gc(value.cast(), RawValueType::Closure) }
-	pub unsafe fn new_userdata(value: NonNull<RawUserdata>) -> Self { Self::new_gc(value.cast(), RawValueType::Userdata) }
-	pub unsafe fn new_thread(value: NonNull<RawThread>) -> Self { Self::new_gc(value.cast(), RawValueType::Thread) }
-	pub unsafe fn new_buffer(value: NonNull<RawBuffer>) -> Self { Self::new_gc(value.cast(), RawValueType::Buffer) }
-
-	pub unsafe fn nil_value() -> TValue { Self::new_nil().into_tvalue() }
-	pub unsafe fn boolean_value(value: bool) -> TValue { Self::new_boolean(value).into_tvalue() }
-	pub unsafe fn lightuserdata_value(value: *mut ()) -> TValue { Self::new_lightuserdata(value).into_tvalue() }
-	pub unsafe fn number_value(value: f64) -> TValue { Self::new_number(value).into_tvalue() }
-	pub unsafe fn vector_value(value: [f32; 3]) -> TValue { Self::new_vector(value).into_tvalue() }
-	pub unsafe fn string_value(value: NonNull<RawString>) -> TValue { Self::new_string(value).into_tvalue() }
-	pub unsafe fn table_value(value: NonNull<RawTable>) -> TValue { Self::new_table(value).into_tvalue() }
-	pub unsafe fn closure_value(value: NonNull<RawClosure>) -> TValue { Self::new_closure(value).into_tvalue() }
-	pub unsafe fn userdata_value(value: NonNull<RawUserdata>) -> TValue { Self::new_userdata(value).into_tvalue() }
-	pub unsafe fn thread_value(value: NonNull<RawThread>) -> TValue { Self::new_thread(value).into_tvalue() }
-	pub unsafe fn buffer_value(value: NonNull<RawBuffer>) -> TValue { Self::new_buffer(value).into_tvalue() }
-
-	pub fn lua_type(&self) -> lua_Type { unsafe { transmute(self.tt) } }
-	pub fn value_type(&self) -> RawValueType { unsafe { RawValueType::try_from(self.lua_type()).unwrap_unchecked() } }
-	pub fn value_date(&self) -> RawValueData { unsafe { RawValueData::from_tvalue(self.into_tvalue()) } }
-
-	pub fn is_value_type(&self) -> bool { self.value_type().is_value_type() }
-	pub fn is_collectible(&self) -> bool { self.value_type().is_collectible() }
+	pub fn is_value_type(&self) -> bool { self.tag().is_value() }
+	pub fn is_collectible(&self) -> bool { self.tag().is_collectible() }
 }

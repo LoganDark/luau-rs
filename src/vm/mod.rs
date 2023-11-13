@@ -22,8 +22,10 @@ use value::thread::Thread;
 
 use crate::compiler::{compile, compile_sneakily, CompiledFunction, CompileError};
 use crate::vm::builder::LuauBuildData;
+use crate::vm::error::LResult;
 use crate::vm::raw::RawGlobal;
 use crate::vm::raw::thread::RawThread;
+use crate::vm::value::LuauValue;
 
 pub mod error;
 pub mod raw;
@@ -56,7 +58,7 @@ impl<D: GlobalData> Luau<D> {
 
 				if let Some(parent) = parent {
 					let parent = Thread::from_raw(parent.as_ref());
-					let userdata = TD::derive(parent);
+					let userdata = TD::derive(&parent);
 					child.as_ref().set_userdata(userdata);
 				} else {
 					child.as_ref().get_userdata::<TD>(); // drop
@@ -87,5 +89,15 @@ impl Luau<()> {
 	#[cfg(feature = "compiler")]
 	pub fn compile_sneakily(source: &str) -> CompiledFunction {
 		compile_sneakily(source, &Default::default(), &Default::default())
+	}
+}
+
+impl<D: GlobalData> Luau<D> {
+	pub unsafe fn main_thread(&self) -> &Thread {
+		unsafe { NonNull::from(&self.global.as_ref().mainthread).cast().as_ref() }
+	}
+
+	pub fn new_thread(&self) -> LResult<LuauValue<Thread>> {
+		unsafe { self.main_thread() }.new_thread()
 	}
 }

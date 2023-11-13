@@ -13,6 +13,8 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+use crate::vm::error::LResult;
+use crate::vm::raw::value::RawValue;
 use crate::vm::value::gc::Datatype;
 use crate::vm::value::thread::Thread;
 
@@ -20,9 +22,10 @@ use crate::vm::value::thread::Thread;
 #[repr(transparent)]
 pub struct Boolean(pub bool);
 
-impl<'a> Datatype<'a> for Boolean {
+unsafe impl<'a> Datatype<'a> for Boolean {
 	type Ref = ();
-	fn acquire_ref(&self, _thread: Thread<'a>) -> Option<Self::Ref> { Some(()) }
+	fn acquire_ref(&self, _thread: &'a Thread<'a>) -> LResult<'a, Self::Ref> { Ok(()) }
+	fn raw_value(&self) -> RawValue { unsafe { RawValue::new_boolean(self.0) } }
 }
 
 impl From<bool> for Boolean {

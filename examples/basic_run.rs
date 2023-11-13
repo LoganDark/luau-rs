@@ -26,6 +26,14 @@ fn main() {
 	let compiled = Luau::compile("return ...")
 		.expect("failed to compile function");
 
+	let thread = vm.new_thread()
+		.expect("failed to create new thread");
+
+	let closure = thread.new_closure(compiled)
+		.expect("failed to create closure");
+
+	eprintln!("{:?}", closure);
+
 	// let chunkname = CStr::from_bytes_with_nul(b"=basic_run.luau\0").expect("die");
 	// let main_thread = vm.main_thread();
 	// let function = main_thread.load_compiled(compiled, chunkname)

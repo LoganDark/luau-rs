@@ -29,7 +29,7 @@ fn main() {
 			config.define("LUAU_BUILD_CLI", "OFF")
 				.define("LUAU_BUILD_TESTS", "OFF")
 				.define("LUAU_STATIC_CRT", "ON")
-				.profile("Release")
+				.profile(if cfg!(debug_assertions) { "RelWithDebInfo" } else { "Release" })
 				.no_build_target(true);
 
 			// Windows is special, and needs to have an extra flag defined
@@ -48,7 +48,9 @@ fn main() {
 
 		// Windows is once again special and outputs libs in even more subdirs
 		#[cfg(target_os = "windows")] {
-			println!("cargo:rustc-link-search=native={}/build/Debug", destination.display());
+			#[cfg(debug_assertions)]
+			println!("cargo:rustc-link-search=native={}/build/RelWithDebInfo", destination.display());
+			#[cfg(not(debug_assertions))]
 			println!("cargo:rustc-link-search=native={}/build/Release", destination.display());
 		}
 
